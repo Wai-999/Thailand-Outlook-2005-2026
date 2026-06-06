@@ -1,12 +1,11 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
 import { Download, Save, X, RefreshCw, ChevronDown } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
-// Types matching the API response shape
+// Types
 // ---------------------------------------------------------------------------
-
 type DataRow = {
   rowIndex: number;
   rowKey: string;
@@ -32,11 +31,13 @@ const YEAR_RANGE_OPTIONS = [
   { label: '2015 onwards', value: '2015' },
   { label: 'Last 6 years', value: 'last6' },
 ] as const;
-
 type YearRange = typeof YEAR_RANGE_OPTIONS[number]['value'];
 
+// Stable empty object so memo'd rows don't re-render when they have no pending changes
+const EMPTY_PENDING: Record<string, string> = {};
+
 // ---------------------------------------------------------------------------
-// Helper: generate CSV from current state (for download)
+// CSV helper
 // ---------------------------------------------------------------------------
 function buildCSV(rows: DataRow[], yearColumns: string[], dataset: string): string {
   if (dataset === 'macro') {
@@ -65,9 +66,86 @@ function downloadFile(content: string, filename: string) {
 }
 
 // ---------------------------------------------------------------------------
+// EditableCell — local state, only commits to parent on blur.
+// This means typing never triggers a parent re-render; only blur does.
+// ---------------------------------------------------------------------------
+const EditableCell = memo(function EditableCell({
+  baseValue,
+  pendingValue,
+  onCommit,
+}: {
+  baseValue: string;
+  pendingValue: string | undefined;
+  onCommit: (value: string) => void;
+}) {
+  const isChanged = pendingValue !== undefined;
+  const displayValue = isChanged ? pendingValue : baseValue;
+  const [local, setLocal] = useState(displayValue);
+
+  // Sync when external value changes (save, discard, dataset switch)
+  const prev = useRef(displayValue);
+  useEffect(() => {
+    if (prev.current !== displayValue) {
+      prev.current = displayValue;
+      setLocal(displayValue);
+    }
+  }, [displayValue]);
+
+  return (
+    <input
+      type="text"
+      value={local}
+      onChange={(e) => setLocal(e.target.value)}
+      onBlur={(e) => onCommit(e.target.value)}
+      placeholder="—"
+      className={`w-[68px] rounded px-2 py-1 text-center text-xs tabular-nums transition-colors focus:outline-none focus:ring-1 focus:ring-[var(--primary)]/60 ${
+        isChanged
+          ? 'bg-[var(--secondary-soft)] font-semibold text-ink'
+          : 'bg-transparent text-ink-muted hover:bg-[var(--surface)]'
+      }`}
+    />
+  );
+});
+
+// ---------------------------------------------------------------------------
+// EditorRow — memoized. Only re-renders when ITS OWN pending values change.
+// Unchanged rows are completely skipped during re-renders.
+// ---------------------------------------------------------------------------
+const EditorRow = memo(function EditorRow({
+  row,
+  visibleYears,
+  pendingForRow,
+  onCellChange,
+}: {
+  row: DataRow;
+  visibleYears: string[];
+  pendingForRow: Record<string, string>;
+  onCellChange: (rowKey: string, year: string, value: string) => void;
+}) {
+  return (
+    <tr className="group border-b border-[var(--glass-border)]/40 last:border-0 transition-colors hover:bg-[var(--primary-soft)]/30">
+      <td className="sticky left-0 z-10 min-w-[200px] bg-white/90 py-2 pl-4 pr-3 font-medium text-ink shadow-[1px_0_0_0_var(--glass-border)] transition-colors group-hover:bg-[var(--primary-soft)]/40">
+        {row.indicatorName}
+      </td>
+      <td className="sticky left-[200px] z-10 min-w-[88px] bg-white/90 py-2 pr-4 text-xs text-ink-muted shadow-[1px_0_0_0_var(--glass-border)] transition-colors group-hover:bg-[var(--primary-soft)]/40">
+        {row.unit}
+      </td>
+      {visibleYears.map((yr) => (
+        <td key={yr} className="py-1 pr-2">
+          <EditableCell
+            baseValue={row.values[yr] ?? ''}
+            pendingValue={pendingForRow[yr]}
+            onCommit={(value) => onCellChange(row.rowKey, yr, value)}
+          />
+        </td>
+      ))}
+    </tr>
+  );
+});
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
-
 export default function UserDataEditor() {
   const [dataset, setDataset] = useState<'macro' | 'micro'>('macro');
   const [sectorFilter, setSectorFilter] = useState<string>('');
@@ -79,27 +157,30 @@ export default function UserDataEditor() {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
 
-  // Pending edits: map of `${rowKey}||${year}` → newValue
   const [pending, setPending] = useState<Map<string, string>>(new Map());
   const [saving, setSaving] = useState(false);
   const [saveResult, setSaveResult] = useState<{ ok: boolean; message: string } | null>(null);
 
-  // Local overlay rows (apply pending on top of fetched rows for display)
-  const displayRows = rows.map((r) => ({
-    ...r,
-    values: Object.fromEntries(
-      yearColumns.map((y) => {
-        const key = `${r.rowKey}||${y}`;
-        return [y, pending.has(key) ? pending.get(key)! : (r.values[y] ?? '')];
-      }),
-    ),
-  }));
+  // ---------------------------------------------------------------------------
+  // pendingByRow — pre-computed index so each EditorRow gets only ITS entries.
+  // Only the row whose key is in the Map gets a new object reference → only
+  // that row re-renders (React.memo skips all others).
+  // ---------------------------------------------------------------------------
+  const pendingByRow = useMemo(() => {
+    const result = new Map<string, Record<string, string>>();
+    for (const [key, value] of pending) {
+      const sep = key.lastIndexOf('||');
+      const rowKey = key.slice(0, sep);
+      const year = key.slice(sep + 2);
+      if (!result.has(rowKey)) result.set(rowKey, {});
+      result.get(rowKey)![year] = value;
+    }
+    return result;
+  }, [pending]);
 
   // ---------------------------------------------------------------------------
   // Fetch
   // ---------------------------------------------------------------------------
-  // resetEdits=true when called from the effect (dataset/sector change);
-  // false when called after a successful save (don't clear the result banner).
   const fetchData = useCallback(async (resetEdits = false) => {
     if (resetEdits) {
       setPending(new Map());
@@ -118,7 +199,7 @@ export default function UserDataEditor() {
         setRows(data.rows);
         setSectors(data.sectors);
         setYearColumns(data.yearColumns);
-        if (data.error) setFetchError(data.error); // soft error: still got rows
+        if (data.error) setFetchError(data.error);
       }
     } catch {
       setFetchError('Failed to fetch data. Check the server and try again.');
@@ -128,31 +209,33 @@ export default function UserDataEditor() {
   }, [dataset, sectorFilter]);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- fetching and resetting edits on dataset/sector change is intentional
     fetchData(true);
   }, [fetchData]);
 
   // ---------------------------------------------------------------------------
-  // Derived year list based on range
+  // Derived year list
   // ---------------------------------------------------------------------------
-  const visibleYears =
-    yearRange === 'all'
-      ? yearColumns
-      : yearRange === 'last6'
-        ? yearColumns.slice(-6)
-        : yearColumns.filter((y) => parseInt(y) >= parseInt(yearRange));
+  const visibleYears = useMemo(
+    () =>
+      yearRange === 'all'
+        ? yearColumns
+        : yearRange === 'last6'
+          ? yearColumns.slice(-6)
+          : yearColumns.filter((y) => parseInt(y) >= parseInt(yearRange)),
+    [yearRange, yearColumns],
+  );
 
   // ---------------------------------------------------------------------------
-  // Edit handler
+  // Cell change — stable callback (no deps), so EditorRow memo is unaffected
   // ---------------------------------------------------------------------------
-  function handleCellChange(rowKey: string, year: string, value: string) {
+  const handleCellChange = useCallback((rowKey: string, year: string, value: string) => {
     setSaveResult(null);
     setPending((prev) => {
       const next = new Map(prev);
       next.set(`${rowKey}||${year}`, value);
       return next;
     });
-  }
+  }, []);
 
   // ---------------------------------------------------------------------------
   // Save
@@ -164,13 +247,9 @@ export default function UserDataEditor() {
 
     const changes: PendingChange[] = [];
     for (const [key, value] of pending.entries()) {
-      const parts = key.split('||');
-      // key format: `sector||indicatorCode||year` -- but rowKey is `sector||indicatorCode`
-      // so key = `${rowKey}||${year}`, and rowKey may itself contain `||`
-      // We stored it as `${rowKey}||${year}`, rowKey = `${sector}||${indicatorCode}`
-      // → split from the right: last segment is year
-      const year = parts[parts.length - 1];
-      const rowKey = parts.slice(0, -1).join('||');
+      const sep = key.lastIndexOf('||');
+      const rowKey = key.slice(0, sep);
+      const year = key.slice(sep + 2);
       changes.push({ rowKey, year, value });
     }
 
@@ -205,35 +284,27 @@ export default function UserDataEditor() {
     }
   }
 
-  // ---------------------------------------------------------------------------
-  // Discard
-  // ---------------------------------------------------------------------------
   function handleDiscard() {
     setPending(new Map());
     setSaveResult(null);
   }
 
-  // ---------------------------------------------------------------------------
-  // Download
-  // ---------------------------------------------------------------------------
   function handleDownload() {
-    const csv = buildCSV(displayRows, yearColumns, dataset);
+    const csv = buildCSV(rows, yearColumns, dataset);
     const filename = dataset === 'macro' ? 'thailand_macro.csv' : 'thailand_micro.csv';
     downloadFile(csv, filename);
   }
 
+  const changeCount = pending.size;
+
   // ---------------------------------------------------------------------------
   // UI
   // ---------------------------------------------------------------------------
-  const changeCount = pending.size;
-
   return (
     <div className="flex min-w-0 flex-col gap-4">
-
-      {/* ---- Unified card: controls bar + scrollable table ---- */}
       <div className="glass-card overflow-hidden p-0">
 
-        {/* Controls bar — always visible at top of card, no sticky needed */}
+        {/* Controls bar */}
         <div className="flex flex-wrap items-center gap-2 border-b border-[var(--glass-border)] bg-white/95 px-3 py-2.5">
 
           {/* Dataset toggle */}
@@ -256,7 +327,6 @@ export default function UserDataEditor() {
             </div>
           </div>
 
-          {/* Divider */}
           <div className="h-6 w-px bg-[var(--glass-border)]" />
 
           {/* Sector filter */}
@@ -294,17 +364,14 @@ export default function UserDataEditor() {
             </div>
           </div>
 
-          {/* Change count badge */}
           {changeCount > 0 && (
             <span className="rounded-full bg-[var(--primary)]/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
               {changeCount} unsaved
             </span>
           )}
 
-          {/* Spacer */}
           <div className="flex-1" />
 
-          {/* Action buttons — right side, always fully visible */}
           <div className="flex shrink-0 items-center gap-1.5">
             <button
               onClick={handleDownload}
@@ -335,7 +402,7 @@ export default function UserDataEditor() {
           </div>
         </div>
 
-        {/* Feedback banner — inside card, between controls and table */}
+        {/* Feedback banner */}
         {saveResult && (
           <div
             className={`border-b px-4 py-2.5 text-xs font-medium ${
@@ -348,14 +415,14 @@ export default function UserDataEditor() {
           </div>
         )}
 
-        {/* Table — scrolls both axes inside this container */}
+        {/* Table */}
         {loading ? (
           <div className="flex flex-col gap-3 p-6">
             {[...Array(6)].map((_, i) => (
               <div key={i} className="h-9 animate-pulse rounded-md bg-[var(--glass-border)]/60" style={{ opacity: 1 - i * 0.12 }} />
             ))}
           </div>
-        ) : fetchError && !displayRows.length ? (
+        ) : fetchError && !rows.length ? (
           <div className="flex flex-col gap-2 p-8 text-center">
             <p className="text-sm font-semibold text-ink">Data file not found</p>
             <p className="text-sm text-ink-muted">{fetchError}</p>
@@ -366,7 +433,6 @@ export default function UserDataEditor() {
         ) : (
           <div className="overflow-auto" style={{ maxHeight: 'calc(100vh - 320px)', minHeight: '280px' }}>
             <table className="min-w-max w-full text-sm">
-              {/* thead sticks within this scroll container */}
               <thead className="sticky top-0 z-10 bg-[var(--surface-strong)]">
                 <tr className="border-b border-[var(--glass-border)]">
                   <th className="sticky left-0 z-20 min-w-[200px] bg-[var(--surface-strong)] py-3 pl-4 pr-3 text-left font-label text-[11px] font-semibold uppercase tracking-wide text-ink-muted shadow-[1px_0_0_0_var(--glass-border)]">
@@ -383,34 +449,16 @@ export default function UserDataEditor() {
                 </tr>
               </thead>
               <tbody>
-                {displayRows.map((row) => (
-                  <tr key={row.rowKey} className="group border-b border-[var(--glass-border)]/40 last:border-0 hover:bg-[var(--primary-soft)]/30 transition-colors">
-                    <td className="sticky left-0 z-10 min-w-[200px] bg-white/90 backdrop-blur-sm group-hover:bg-[var(--primary-soft)]/40 py-2 pl-4 pr-3 font-medium text-ink transition-colors shadow-[1px_0_0_0_var(--glass-border)]">
-                      {row.indicatorName}
-                    </td>
-                    <td className="sticky left-[200px] z-10 min-w-[88px] bg-white/90 backdrop-blur-sm group-hover:bg-[var(--primary-soft)]/40 py-2 pr-4 text-xs text-ink-muted transition-colors shadow-[1px_0_0_0_var(--glass-border)]">{row.unit}</td>
-                    {visibleYears.map((yr) => {
-                      const pendingKey = `${row.rowKey}||${yr}`;
-                      const isChanged = pending.has(pendingKey);
-                      return (
-                        <td key={yr} className="py-1 pr-2">
-                          <input
-                            type="text"
-                            value={row.values[yr] ?? ''}
-                            onChange={(e) => handleCellChange(row.rowKey, yr, e.target.value)}
-                            placeholder="—"
-                            className={`w-[68px] rounded px-2 py-1 text-center text-xs tabular-nums transition-colors focus:outline-none focus:ring-1 focus:ring-[var(--primary)]/60 ${
-                              isChanged
-                                ? 'bg-[var(--secondary-soft)] font-semibold text-ink'
-                                : 'bg-transparent text-ink-muted hover:bg-[var(--surface)]'
-                            }`}
-                          />
-                        </td>
-                      );
-                    })}
-                  </tr>
+                {rows.map((row) => (
+                  <EditorRow
+                    key={row.rowKey}
+                    row={row}
+                    visibleYears={visibleYears}
+                    pendingForRow={pendingByRow.get(row.rowKey) ?? EMPTY_PENDING}
+                    onCellChange={handleCellChange}
+                  />
                 ))}
-                {!loading && displayRows.length === 0 && (
+                {!rows.length && (
                   <tr>
                     <td colSpan={visibleYears.length + 2} className="py-8 text-center text-sm text-ink-soft">
                       No rows match the current filters.
