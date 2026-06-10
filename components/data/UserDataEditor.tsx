@@ -209,7 +209,13 @@ export default function UserDataEditor() {
   }, [dataset, sectorFilter]);
 
   useEffect(() => {
-    fetchData(true);
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (!cancelled) void fetchData(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [fetchData]);
 
   // ---------------------------------------------------------------------------
