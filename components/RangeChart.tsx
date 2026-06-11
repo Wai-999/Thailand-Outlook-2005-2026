@@ -93,12 +93,15 @@ export default function RangeChart({
   height = 280,
   variant,
   yDomain,
+  colors,
   onRangeChange,
 }: {
   series: IndicatorSeries | IndicatorSeries[];
   height?: number;
   variant?: 'area' | 'line';
   yDomain?: [number | 'auto', number | 'auto'];
+  /** Override per-series colors. Index 0 = first series, etc. Falls back to SERIES_COLORS. */
+  colors?: string[];
   /** Called with (start, end) when the user commits a drag selection, or (null, null) on reset. */
   onRangeChange?: (startDate: string | null, endDate: string | null) => void;
 }) {
@@ -228,8 +231,8 @@ export default function RangeChart({
               <AreaChart {...chartProps}>
                 <defs>
                   <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={SERIES_COLORS[0]} stopOpacity={0.32} />
-                    <stop offset="100%" stopColor={SERIES_COLORS[0]} stopOpacity={0.02} />
+                    <stop offset="0%" stopColor={colors?.[0] ?? SERIES_COLORS[0]} stopOpacity={0.32} />
+                    <stop offset="100%" stopColor={colors?.[0] ?? SERIES_COLORS[0]} stopOpacity={0.02} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid stroke="var(--glass-border)" strokeDasharray="3 5" vertical={false} />
@@ -247,7 +250,7 @@ export default function RangeChart({
                 <Area
                   type="monotone"
                   dataKey={list[0].indicatorName}
-                  stroke={SERIES_COLORS[0]}
+                  stroke={colors?.[0] ?? SERIES_COLORS[0]}
                   strokeWidth={2}
                   fill={`url(#${gradId})`}
                   connectNulls
@@ -281,7 +284,7 @@ export default function RangeChart({
                     key={s.indicatorCode}
                     type="monotone"
                     dataKey={s.indicatorName}
-                    stroke={SERIES_COLORS[i % SERIES_COLORS.length]}
+                    stroke={colors?.[i] ?? SERIES_COLORS[i % SERIES_COLORS.length]}
                     strokeWidth={2}
                     dot={false}
                     connectNulls

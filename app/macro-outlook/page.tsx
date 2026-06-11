@@ -4,6 +4,7 @@ import ResearchNote from '@/components/ResearchNote';
 import DemoDataBanner from '@/components/DemoDataBanner';
 import SourceBadge from '@/components/SourceBadge';
 import MacroTrendSection from './MacroTrendSection';
+import CountryCompare from './CountryCompare';
 import { findSeries } from '@/lib/data';
 
 export default function MacroOutlookPage() {
@@ -151,6 +152,27 @@ export default function MacroOutlookPage() {
         ) : (
           <p className="text-sm text-ink-soft">GDP growth series unavailable.</p>
         )}
+      </section>
+
+      {/* ------------------------------------------------------------------ */}
+      {/* Regional peer comparison                                            */}
+      {/* ------------------------------------------------------------------ */}
+      <section className="flex flex-col gap-5">
+        <header>
+          <p className="font-label text-xs font-semibold uppercase tracking-wide text-secondary">Regional context</p>
+          <h2 className="font-display mt-1 text-2xl font-semibold text-ink md:text-[2rem]">
+            How does Thailand compare with its ASEAN neighbours?
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-muted md:text-base">
+            GDP growth, inflation, and trade integration for Vietnam, Indonesia, Malaysia, and
+            the Philippines &mdash; overlaid on Thailand&rsquo;s own lines. Select one or more
+            countries below to add their series to the charts.
+          </p>
+        </header>
+        <CountryCompare
+          thaGdp={gdpGrowth ?? undefined}
+          thaInflation={inflation ?? undefined}
+        />
       </section>
     </div>
   );
