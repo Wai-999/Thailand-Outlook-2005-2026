@@ -2,6 +2,7 @@ import GlassCard from '@/components/GlassCard';
 import ResearchNote from '@/components/ResearchNote';
 import DemoDataBanner from '@/components/DemoDataBanner';
 import SourceBadge from '@/components/SourceBadge';
+import FreshnessHeatmap from './FreshnessHeatmap';
 import { allSeries, sources } from '@/lib/data';
 import type { Reliability } from '@/lib/types';
 import { ShieldCheck, Globe, FileQuestion, FlaskConical } from 'lucide-react';
@@ -45,11 +46,22 @@ export default function DataSourcesPage() {
   const minYear = years.length ? Math.min(...years) : null;
   const maxYear = years.length ? Math.max(...years) : null;
 
-  const sectorCounts = sectors
-    .map((sector) => ({ sector, count: series.filter((s) => s.sector === sector).length }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 8);
-  const maxSectorCount = Math.max(...sectorCounts.map((s) => s.count), 1);
+  // Freshness heatmap — most recent non-null year per indicator, grouped by sector
+  const heatmapData = sectors.map((sector) => ({
+    sector,
+    indicators: series
+      .filter((s) => s.sector === sector)
+      .map((s) => {
+        let latestYear: number | null = null;
+        for (let i = s.points.length - 1; i >= 0; i--) {
+          if (s.points[i].value !== null && s.points[i].value !== undefined) {
+            latestYear = parseInt(s.points[i].date.slice(0, 4), 10);
+            break;
+          }
+        }
+        return { code: s.indicatorCode, name: s.indicatorName, latestYear };
+      }),
+  }));
 
   const reliabilityCounts = RELIABILITY_GUIDE.map((g) => ({
     ...g,
@@ -144,23 +156,10 @@ export default function DataSourcesPage() {
           </GlassCard>
         </div>
         <GlassCard
-          title="Where the indicators concentrate"
-          subtitle="The eight sectors with the most tracked series -- a rough map of where this dashboard can say the most"
+          title="Data freshness by indicator"
+          subtitle="Each cell is one tracked indicator. Colour shows the most recent non-null year in its data — hover a cell to see the indicator name and year."
         >
-          <div className="flex flex-col gap-2.5">
-            {sectorCounts.map(({ sector, count }) => (
-              <div key={sector} className="flex items-center gap-3">
-                <p className="w-44 shrink-0 truncate text-xs text-ink-muted md:w-56">{sector}</p>
-                <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-surface-strong">
-                  <div
-                    className="h-full rounded-full bg-primary"
-                    style={{ width: `${Math.max(6, (count / maxSectorCount) * 100)}%` }}
-                  />
-                </div>
-                <p className="w-6 shrink-0 text-right text-xs font-medium text-ink-muted">{count}</p>
-              </div>
-            ))}
-          </div>
+          <FreshnessHeatmap data={heatmapData} />
         </GlassCard>
         <ResearchNote title="What 'covered' does and doesn't mean">
           <p>
