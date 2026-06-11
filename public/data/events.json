@@ -1,0 +1,32 @@
+[
+  {
+    "date": "1997",
+    "label": "Asian Financial Crisis — Baht collapsed in July; GDP contracted −7.6% in 1998",
+    "short": "AFC"
+  },
+  {
+    "date": "2008",
+    "label": "Global Financial Crisis — exports collapsed; growth slowed sharply",
+    "short": "GFC"
+  },
+  {
+    "date": "2010",
+    "label": "Political crisis — Red Shirt protests; state of emergency in Bangkok",
+    "short": "Protests"
+  },
+  {
+    "date": "2011",
+    "label": "Devastating floods — worst in 50 years; GDP contracted in Q4",
+    "short": "Floods"
+  },
+  {
+    "date": "2014",
+    "label": "Military coup — NCPO junta took power in May; tourism fell sharply",
+    "short": "Coup"
+  },
+  {
+    "date": "2020",
+    "label": "COVID-19 pandemic — borders closed; GDP contracted −6.1%",
+    "short": "COVID"
+  }
+]

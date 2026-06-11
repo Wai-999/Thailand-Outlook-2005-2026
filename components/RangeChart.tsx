@@ -13,9 +13,73 @@ import {
   Tooltip,
   Legend,
   ReferenceArea,
+  ReferenceLine,
 } from 'recharts';
 import type { IndicatorSeries } from '@/lib/types';
 import { formatValue } from '@/lib/data';
+import { useUIStore } from '@/lib/store';
+import eventsRaw from '@/public/data/events.json';
+
+// ── Event annotations ──────────────────────────────────────────────────────────
+type ChartEvent = { date: string; label: string; short: string };
+const EVENTS: ChartEvent[] = eventsRaw as unknown as ChartEvent[];
+
+/**
+ * EventMarker — rendered as a Recharts ReferenceLine label.
+ * A wide transparent rect captures hover; the short label fades in,
+ * rotated −90° so it reads bottom-to-top along the dashed line.
+ */
+function EventMarker({
+  viewBox,
+  event,
+  hoveredDate,
+  setHoveredDate,
+}: {
+  viewBox?: { x?: number; y?: number; width?: number; height?: number };
+  event: ChartEvent;
+  hoveredDate: string | null;
+  setHoveredDate: (d: string | null) => void;
+}) {
+  if (!viewBox) return null;
+  const x = viewBox.x ?? 0;
+  const y = viewBox.y ?? 0;
+  const h = viewBox.height ?? 200;
+  const isHovered = hoveredDate === event.date;
+
+  return (
+    <g>
+      {/* Wide transparent hit rect — much easier to hover than 1 px line */}
+      <rect
+        x={x - 7}
+        y={y}
+        width={14}
+        height={h}
+        fill="transparent"
+        style={{ cursor: 'default' }}
+        onMouseEnter={() => setHoveredDate(event.date)}
+        onMouseLeave={() => setHoveredDate(null)}
+      />
+      {/* Rotated short label — fades in on hover */}
+      <text
+        x={x + 3}
+        y={y + h}
+        fill="var(--secondary)"
+        fontSize={9}
+        fontWeight={600}
+        textAnchor="end"
+        transform={`rotate(-90, ${x + 3}, ${y + h})`}
+        style={{
+          opacity: isHovered ? 1 : 0,
+          transition: 'opacity 0.15s ease',
+          pointerEvents: 'none',
+          letterSpacing: '0.03em',
+        }}
+      >
+        {event.short}
+      </text>
+    </g>
+  );
+}
 
 const SERIES_COLORS = [
   '#2563eb', // primary blue
@@ -118,6 +182,13 @@ export default function RangeChart({
   const [zoomStart, setZoomStart] = useState<string | null>(null);
   const [zoomEnd, setZoomEnd] = useState<string | null>(null);
 
+  // Hovered event date — controls label opacity
+  const [hoveredEventDate, setHoveredEventDate] = useState<string | null>(null);
+
+  // Global toggle (Zustand — persists across pages)
+  const showEvents = useUIStore((s) => s.showEvents);
+  const toggleEvents = useUIStore((s) => s.toggleEvents);
+
   const isHydrated = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -132,6 +203,11 @@ export default function RangeChart({
   const hi = zoomStart && zoomEnd ? (zoomStart <= zoomEnd ? zoomEnd : zoomStart) : null;
 
   const data = lo && hi ? allData.filter((d) => d.date >= lo && d.date <= hi) : allData;
+
+  // Events visible in the current zoom window (all if unzoomed)
+  const visibleEvents: ChartEvent[] = showEvents
+    ? EVENTS.filter((e) => !lo || !hi || (e.date >= lo && e.date <= hi))
+    : [];
 
   const unit = list[0]?.unit;
   const mode = variant ?? (list.length === 1 ? 'area' : 'line');
@@ -196,6 +272,25 @@ export default function RangeChart({
     margin: { top: 12, right: 12, left: 0, bottom: 0 },
   };
 
+  // Event ReferenceLine elements (shared between AreaChart and LineChart)
+  const eventLines = visibleEvents.map((event) => (
+    <ReferenceLine
+      key={event.date}
+      x={event.date}
+      stroke="var(--glass-border)"
+      strokeDasharray="3 3"
+      strokeWidth={1.5}
+      label={(props: { viewBox?: { x?: number; y?: number; width?: number; height?: number } }) => (
+        <EventMarker
+          viewBox={props.viewBox}
+          event={event}
+          hoveredDate={hoveredEventDate}
+          setHoveredDate={setHoveredEventDate}
+        />
+      )}
+    />
+  ));
+
   // ReferenceArea shown while the user is actively dragging
   const dragArea =
     isDragging && refLeft && refRight && refLeft !== refRight ? (
@@ -212,6 +307,25 @@ export default function RangeChart({
 
   return (
     <div>
+      {/* ── "Show events" toggle ──────────────────────────────────────── */}
+      <div className="mb-2 flex items-center justify-end">
+        <button
+          onClick={toggleEvents}
+          aria-pressed={showEvents}
+          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-medium transition-colors ${
+            showEvents
+              ? 'border-[var(--secondary)] bg-[var(--secondary)]/10 text-secondary'
+              : 'border-[var(--glass-border)] text-ink-soft hover:border-[var(--secondary)]/40 hover:text-ink'
+          }`}
+        >
+          <span
+            aria-hidden
+            className={`inline-block h-1.5 w-1.5 shrink-0 rounded-full ${showEvents ? 'bg-[var(--secondary)]' : 'bg-current opacity-40'}`}
+          />
+          Show events
+        </button>
+      </div>
+
       {/* ── Chart ─────────────────────────────────────────────────────── */}
       <div
         style={{ width: '100%', height }}
@@ -258,6 +372,7 @@ export default function RangeChart({
                   activeDot={{ r: 4, strokeWidth: 0 }}
                   isAnimationActive={false}
                 />
+                {eventLines}
                 {dragArea}
               </AreaChart>
             ) : (
@@ -292,6 +407,7 @@ export default function RangeChart({
                     isAnimationActive={false}
                   />
                 ))}
+                {eventLines}
                 {dragArea}
               </LineChart>
             )}

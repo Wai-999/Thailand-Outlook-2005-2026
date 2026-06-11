@@ -19,10 +19,15 @@ type UIState = {
   sidebarOpen: boolean;
   toggleSidebar: () => void;
   setSidebarOpen: (open: boolean) => void;
+  /** Whether historical event annotations are shown on time-series charts. */
+  showEvents: boolean;
+  toggleEvents: () => void;
 };
 
 export const useUIStore = create<UIState>((set, get) => ({
   sidebarOpen: true,
+  showEvents: false,
+  toggleEvents: () => set((s) => ({ showEvents: !s.showEvents })),
   toggleSidebar: () => {
     const next = !get().sidebarOpen;
     set({ sidebarOpen: next });
