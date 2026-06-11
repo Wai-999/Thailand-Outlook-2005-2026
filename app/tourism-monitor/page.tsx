@@ -4,7 +4,7 @@ import RangeChart from '@/components/RangeChart';
 import ResearchNote from '@/components/ResearchNote';
 import DemoDataBanner from '@/components/DemoDataBanner';
 import SourceBadge from '@/components/SourceBadge';
-import { findSeries, latestPoint, formatValue } from '@/lib/data';
+import { findSeries, latestPoint, formatValue, pointAtYear } from '@/lib/data';
 
 export default function TourismMonitorPage() {
   const recoveryIndex = findSeries('tourism_recovery_index_2019_100');
@@ -17,6 +17,18 @@ export default function TourismMonitorPage() {
   const receiptsShareExports = findSeries('tourism_receipts_exports_pct');
 
   const recoveryLatest = recoveryIndex ? latestPoint(recoveryIndex) : undefined;
+
+  // ── Recovery ratio: current vs. 2019 pre-pandemic peak ───────────────────
+  const arrivalsLatest   = arrivals ? latestPoint(arrivals)          : undefined;
+  const arrivals2019     = arrivals ? pointAtYear(arrivals, 2019)    : undefined;
+  const receiptsLatest   = receipts ? latestPoint(receipts)          : undefined;
+  const receipts2019     = receipts ? pointAtYear(receipts, 2019)    : undefined;
+  const arrivalRatio     = arrivalsLatest && arrivals2019 && arrivals2019.value > 0
+    ? ((arrivalsLatest.value / arrivals2019.value) * 100) : null;
+  const receiptRatio     = receiptsLatest && receipts2019 && receipts2019.value > 0
+    ? ((receiptsLatest.value / receipts2019.value) * 100) : null;
+  const arrivalGap       = arrivalsLatest && arrivals2019
+    ? (arrivalsLatest.value - arrivals2019.value) : null;
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-12 pb-16">
@@ -95,48 +107,179 @@ export default function TourismMonitorPage() {
       </section>
 
       {/* ------------------------------------------------------------------ */}
-      {/* Are arrivals and receipts recovering at the same pace?              */}
+      {/* Volume, recovery ratio, and growth drivers (3-part framework)       */}
       {/* ------------------------------------------------------------------ */}
       <section className="flex flex-col gap-5">
         <header>
           <p className="font-label text-xs font-semibold uppercase tracking-wide text-secondary">Volume vs. spending</p>
           <h2 className="font-display mt-1 text-2xl font-semibold text-ink md:text-[2rem]">
-            Are visitor numbers and visitor spending recovering at the same pace?
+            Absolute volume, recovery gap, and what&rsquo;s driving both
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-muted md:text-base">
-            A rebound can show up two different ways &mdash; more people walking through the
-            gates, or the same number of people spending more once they&rsquo;re here. Comparing
-            the year-over-year growth of arrivals and receipts is one way to see which is doing
-            more of the work in a given year.
+            Year-over-year percentage growth is distorted by the pandemic base effect. The more
+            useful questions are: how large is the market right now in real terms, how far is it
+            from the 2019 ceiling, and what factors are shaping the current slope?
           </p>
         </header>
-        <GlassCard
-          title="Two growth rates, side by side"
-          subtitle="Year-over-year change in visitor arrivals vs. year-over-year change in tourism receipts"
-        >
-          {arrivalsYoy && receiptsYoy ? (
-            <RangeChart
-              series={[arrivalsYoy, receiptsYoy]}
-              variant="line"
-              yDomain={[-100, 120]}
-            />
-          ) : (
-            <p className="text-sm text-ink-soft">Series unavailable.</p>
-          )}
-          <p className="mt-2 rounded-[var(--radius-md)] border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800">
-            <strong>Chart note:</strong> The 2022 bar registers ~2,500 % YoY because arrivals collapsed to near-zero in 2021 (COVID lock-down) — a single visitor returning would look like infinite growth from that base.
-            The Y-axis is capped at 120 % to keep other years readable. The spike is real, but comparing any 2022 reading to the surrounding years is misleading; treat 2022–2023 as a rebound period rather than a growth signal.
+
+        {/* Part 1 — Absolute volume ---------------------------------------- */}
+        <div className="flex flex-col gap-1">
+          <p className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
+            Part 1 &nbsp;·&nbsp; Absolute volume
           </p>
-        </GlassCard>
-        <ResearchNote title="How to read this">
+          <GlassCard
+            title="Visitor arrivals — actual headcount, not percentage change"
+            subtitle={`Total international visitor arrivals (millions) · annual series`}
+          >
+            {arrivals ? (
+              <RangeChart series={arrivals} variant="area" />
+            ) : (
+              <p className="text-sm text-ink-soft">Series unavailable.</p>
+            )}
+            <p className="mt-3 text-sm leading-relaxed text-ink-muted">
+              The shape here tells you what percentage growth cannot: you can see the actual floor
+              (2021, near-zero), the steepness of the rebound, and where the slope is currently
+              flattening &mdash; which signals a transition from post-pandemic rebound growth
+              into market-share competition.
+            </p>
+          </GlassCard>
+        </div>
+
+        {/* Part 2 — Pre-pandemic baseline / recovery ratio -------------------- */}
+        <div className="flex flex-col gap-3">
+          <p className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
+            Part 2 &nbsp;·&nbsp; Pre-pandemic baseline (2019 = 100%)
+          </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {/* Arrivals recovery ratio */}
+            <div className="rounded-[var(--radius-lg)] border border-[var(--glass-border)] bg-white/50 p-5">
+              <p className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
+                Arrivals recovery ratio
+              </p>
+              <p className={`mt-3 font-display text-4xl font-bold ${arrivalRatio !== null && arrivalRatio >= 95 ? 'text-[var(--success)]' : 'text-[var(--warning)]'}`}>
+                {arrivalRatio !== null ? `${arrivalRatio.toFixed(1)}%` : '—'}
+              </p>
+              <p className="mt-1 text-xs text-ink-soft">
+                of 2019&nbsp;peak&nbsp;({arrivals2019 ? formatValue(arrivals2019.value, arrivals2019 ? 'M visitors' : '') : '—'}&nbsp;M)
+              </p>
+              {arrivalGap !== null && (
+                <p className="mt-2 text-sm text-ink-muted">
+                  {arrivalGap < 0
+                    ? `Still ${Math.abs(arrivalGap).toFixed(1)} M visitors short of the 2019 ceiling.`
+                    : `Has cleared the 2019 ceiling by ${arrivalGap.toFixed(1)} M visitors.`}
+                </p>
+              )}
+            </div>
+
+            {/* Receipts recovery ratio */}
+            <div className="rounded-[var(--radius-lg)] border border-[var(--glass-border)] bg-white/50 p-5">
+              <p className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
+                Receipts recovery ratio
+              </p>
+              <p className={`mt-3 font-display text-4xl font-bold ${receiptRatio !== null && receiptRatio >= 95 ? 'text-[var(--success)]' : 'text-[var(--warning)]'}`}>
+                {receiptRatio !== null ? `${receiptRatio.toFixed(1)}%` : '—'}
+              </p>
+              <p className="mt-1 text-xs text-ink-soft">
+                of 2019 receipts ({receipts2019 ? formatValue(receipts2019.value, receipts2019 ? 'USD B' : '') : '—'} B)
+              </p>
+              <p className="mt-2 text-sm text-ink-muted">
+                {receiptRatio !== null && arrivalRatio !== null
+                  ? receiptRatio > arrivalRatio
+                    ? 'Spending is recovering faster than headcount — each visitor is spending more on average.'
+                    : 'Headcount is recovering faster than spending — volume-led rather than value-led rebound.'
+                  : ''}
+              </p>
+            </div>
+
+            {/* Slope interpretation */}
+            <div className="rounded-[var(--radius-lg)] border border-[var(--glass-border)] bg-white/50 p-5">
+              <p className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
+                Slope signal
+              </p>
+              <p className="mt-3 font-display text-xl font-bold text-ink">
+                {arrivalRatio !== null && arrivalRatio >= 95
+                  ? 'Flattening'
+                  : arrivalRatio !== null && arrivalRatio >= 70
+                  ? 'Recovering'
+                  : 'Rebuilding'}
+              </p>
+              <p className="mt-2 text-sm text-ink-muted">
+                {arrivalRatio !== null && arrivalRatio >= 85
+                  ? 'The curve is approaching its pre-shock ceiling. Growth will increasingly come from market share competition, not post-pandemic rebound math.'
+                  : 'Still meaningfully below 2019. Rebound growth remains structurally available, though the pace depends on visa policy and regional competition.'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Part 3 — Growth drivers ----------------------------------------- */}
+        <div className="flex flex-col gap-3">
+          <p className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-ink-soft">
+            Part 3 &nbsp;·&nbsp; Growth drivers currently influencing this volume
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className="rounded-[var(--radius-md)] border border-[var(--glass-border)] bg-white/45 p-4">
+              <p className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--primary)]">
+                Visa &amp; access policy
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+                Thailand&rsquo;s visa-free and visa-on-arrival expansions (India, China, Gulf markets)
+                directly shape which source markets can reactivate. Policy changes here have faster
+                arrival effects than any other single lever.
+              </p>
+            </div>
+            <div className="rounded-[var(--radius-md)] border border-[var(--glass-border)] bg-white/45 p-4">
+              <p className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--secondary)]">
+                Baht strength &amp; price competitiveness
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+                A stronger baht raises the USD cost of a Thai holiday relative to competing
+                destinations (Vietnam, Malaysia, Bali). When receipts recovery lags arrivals
+                recovery, currency effects and pricing mix are often the explanation.
+              </p>
+            </div>
+            <div className="rounded-[var(--radius-md)] border border-[var(--glass-border)] bg-white/45 p-4">
+              <p className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--warning)]">
+                Regional competition &amp; airlift
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+                Vietnam, Indonesia, and Malaysia have all expanded low-cost carrier capacity since
+                2022. As the rebound matures, Thailand increasingly competes for the same traveler
+                pool rather than simply receiving returning visitors.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Supplementary: YoY rates (clearly labeled as context only) ---------- */}
+        <details className="group">
+          <summary className="cursor-pointer select-none font-label text-xs font-semibold uppercase tracking-wide text-ink-soft hover:text-ink">
+            ▸ &nbsp;Supplementary: year-over-year growth rates (use with caution)
+          </summary>
+          <div className="mt-3">
+            <GlassCard
+              title="YoY change in arrivals vs. receipts"
+              subtitle="Useful only for 2018–2019 and 2024 onward — 2020–2023 are base-effect distortions"
+            >
+              {arrivalsYoy && receiptsYoy ? (
+                <RangeChart series={[arrivalsYoy, receiptsYoy]} variant="line" yDomain={[-100, 120]} />
+              ) : (
+                <p className="text-sm text-ink-soft">Series unavailable.</p>
+              )}
+              <p className="mt-2 rounded-[var(--radius-md)] border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800">
+                <strong>Base-effect warning:</strong> The 2022 bar would read ~2,500 % YoY (arrivals from near-zero in 2021). Y-axis capped at 120 % to prevent that spike from making all other years unreadable. Treat 2020–2023 as a distorted rebound window, not meaningful trend data.
+              </p>
+            </GlassCard>
+          </div>
+        </details>
+
+        <ResearchNote title="When to stop expecting rebound growth">
           <p>
-            When the receipts line runs above the arrivals line, spending is growing faster than
-            visitor numbers &mdash; a sign that, on average, each visitor is contributing more
-            (longer stays, pricier itineraries, or simply currency effects on receipts measured in
-            dollars). When arrivals run ahead of receipts, the rebound looks more like a story of
-            volume than value. Neither pattern is inherently better &mdash; they just point a
-            researcher toward different follow-up questions: one toward marketing reach and flight
-            connectivity, the other toward what&rsquo;s happening to prices and the baht.
+            Watch the slope of the absolute arrivals line. A flattening curve after the recovery
+            ratio clears ~90 % of the 2019 ceiling is the clearest signal that post-pandemic
+            &ldquo;catch-up&rdquo; growth is exhausted. From that point forward, incremental arrival
+            gains come from market share competition &mdash; which requires a different playbook
+            than simply re-opening routes and reinstating visas.
           </p>
         </ResearchNote>
       </section>
