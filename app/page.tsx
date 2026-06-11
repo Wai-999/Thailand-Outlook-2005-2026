@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowRight, Compass, Users, FlaskConical, Briefcase, GraduationCap, Megaphone } from 'lucide-react';
+import { ArrowRight, Compass, Users, FlaskConical, Briefcase, GraduationCap, Megaphone, Plane, TrendingUp, Zap, Activity } from 'lucide-react';
 import GlassCard from '@/components/GlassCard';
 import MetricCard from '@/components/MetricCard';
 import TimeSeriesChart from '@/components/TimeSeriesChart';
@@ -9,7 +9,7 @@ import SourceBadge from '@/components/SourceBadge';
 import ThresholdDrawer from '@/components/ThresholdDrawer';
 import AlertsConfigButton from '@/components/AlertsConfigButton';
 import { ChartExportWrapper } from '@/components/ChartExportControls';
-import { findSeries, latestPoint, formatValue } from '@/lib/data';
+import { findSeries, latestPoint, formatValue, pointAtYear } from '@/lib/data';
 import { buildRiskScore } from '@/lib/stats';
 
 // ----------------------------------------------------------------------
@@ -109,6 +109,61 @@ export default function CommandCenterPage() {
     });
   }
   const risk = buildRiskScore(driversInput);
+
+  // ----------------------------------------------------------------
+  // Verdict card data — three biggest stories derived from live series.
+  // This is purely display logic; the underlying series come from lib/data.
+  // ----------------------------------------------------------------
+  const tourismSeries  = findSeries('tourism_arrivals_million');
+  const tourismLatest  = tourismSeries ? latestPoint(tourismSeries) : undefined;
+  const tourism2019    = tourismSeries ? pointAtYear(tourismSeries, 2019) : undefined;
+  const tourismRatio   = tourismLatest && tourism2019 && tourism2019.value > 0
+    ? Math.round((tourismLatest.value / tourism2019.value) * 100)
+    : null;
+
+  const digitalSeries  = findSeries('technology_digital_digital_payment_transactions_billion_thb');
+  const digitalLatest  = digitalSeries ? latestPoint(digitalSeries) : undefined;
+
+  const BIGGEST_STORIES = [
+    {
+      icon: Plane,
+      href: '/tourism-monitor',
+      label: 'Tourism Monitor',
+      headline: tourismRatio !== null
+        ? `${tourismRatio}% of 2019 peak`
+        : 'Recovery tracking vs. 2019',
+      body: tourismRatio !== null && tourismRatio < 100
+        ? `Arrivals have recovered to ${tourismRatio}% of the pre-pandemic peak — still ${100 - tourismRatio} percentage points short of full recovery.`
+        : 'International tourism is the economy\'s highest-visibility recovery story right now.',
+      accent: 'text-[var(--secondary)]',
+      accentBg: 'bg-[var(--secondary)]/8',
+    },
+    {
+      icon: TrendingUp,
+      href: '/macro-outlook',
+      label: 'Macro Outlook',
+      headline: debtValue !== null && debtValue !== undefined
+        ? `${formatValue(debtValue, '% of GDP')} public debt`
+        : 'Fiscal space under pressure',
+      body: debtValue !== null && debtValue !== undefined
+        ? `At ${formatValue(debtValue, '% of GDP')} of GDP, public debt is approaching the upper end of the range Thailand has historically maintained. The trajectory matters as much as the level.`
+        : 'The public balance sheet is the most-watched number in the macro debate right now.',
+      accent: 'text-[var(--primary)]',
+      accentBg: 'bg-[var(--primary)]/8',
+    },
+    {
+      icon: Zap,
+      href: '/province-map',
+      label: 'Province Map',
+      headline: digitalLatest
+        ? `${formatValue(digitalLatest.value, digitalSeries!.unit)} digital payments`
+        : 'Digital economy accelerating',
+      body: 'Digital payment volume has grown rapidly over the past five years — but the gains are concentrated. The geographic lens shows which regions are keeping pace.',
+      accent: 'text-success',
+      accentBg: 'bg-success/8',
+    },
+  ] as const;
+
   const riskToneClass =
     risk.level === 'high'
       ? 'text-danger'
@@ -167,6 +222,77 @@ export default function CommandCenterPage() {
               See how the numbers connect
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* ---------------------------------------------------------- */}
+      {/* Situation Report — verdict card + 3 biggest stories       */}
+      {/* ---------------------------------------------------------- */}
+      <section className="flex flex-col gap-4">
+        {/* Verdict banner */}
+        <div className="glass-card flex flex-wrap items-center gap-4 p-4 md:p-5">
+          <div className="flex items-center gap-3">
+            <span
+              className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                risk.level === 'high'
+                  ? 'bg-danger/10'
+                  : risk.level === 'elevated'
+                    ? 'bg-[var(--secondary)]/10'
+                    : risk.level === 'moderate'
+                      ? 'bg-ink-soft/10'
+                      : 'bg-success/10'
+              }`}
+            >
+              <Activity
+                size={16}
+                strokeWidth={2}
+                className={riskToneClass}
+              />
+            </span>
+            <div>
+              <p className="font-label text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-soft">
+                Today&rsquo;s read
+              </p>
+              <p className="text-sm font-semibold text-ink">{riskLevelCopy[risk.level]}</p>
+            </div>
+          </div>
+          <div className="ml-auto hidden sm:block">
+            <span className={`font-display text-4xl font-bold tabular-nums ${riskToneClass}`}>
+              {risk.score}
+            </span>
+            <span className="ml-1.5 text-xs text-ink-soft">/ 100</span>
+          </div>
+        </div>
+
+        {/* Three biggest stories */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          {BIGGEST_STORIES.map(({ icon: Icon, href, label, headline, body, accent, accentBg }) => (
+            <Link
+              key={href}
+              href={href}
+              className="group glass-card flex flex-col gap-3 p-4 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-glass-lg)]"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <span className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${accentBg}`}>
+                  <Icon size={15} strokeWidth={1.75} className={accent} />
+                </span>
+                <span
+                  className="font-label text-[10px] font-semibold uppercase tracking-[0.1em] text-ink-soft transition-colors group-hover:text-primary"
+                  style={{ fontFamily: 'var(--font-label)' }}
+                >
+                  {label}
+                </span>
+              </div>
+              <p className={`font-display text-xl font-bold leading-tight ${accent}`}>
+                {headline}
+              </p>
+              <p className="text-xs leading-relaxed text-ink-muted">{body}</p>
+              <div className="mt-auto flex items-center gap-1.5 text-xs font-medium text-ink-soft transition-colors group-hover:text-primary">
+                Go deeper
+                <ArrowRight size={12} strokeWidth={2.25} />
+              </div>
+            </Link>
+          ))}
         </div>
       </section>
 
