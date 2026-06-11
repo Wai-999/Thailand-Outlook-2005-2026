@@ -1,6 +1,6 @@
 import GlassCard from '@/components/GlassCard';
 import MetricCard from '@/components/MetricCard';
-import TimeSeriesChart from '@/components/TimeSeriesChart';
+import RangeChart from '@/components/RangeChart';
 import ResearchNote from '@/components/ResearchNote';
 import DemoDataBanner from '@/components/DemoDataBanner';
 import SourceBadge from '@/components/SourceBadge';
@@ -39,9 +39,9 @@ export default function InvestmentTrackerPage() {
 
       <DemoDataBanner />
 
-      {/* ---------------------------------------------------------- */}
-      {/* Is investment accelerating, holding, or losing ground?      */}
-      {/* ---------------------------------------------------------- */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Is investment accelerating, holding, or losing ground?              */}
+      {/* ------------------------------------------------------------------ */}
       <section className="flex flex-col gap-5">
         <header>
           <p className="font-label text-xs font-semibold uppercase tracking-wide text-secondary">The big picture</p>
@@ -74,7 +74,7 @@ export default function InvestmentTrackerPage() {
           subtitle="Gross capital formation vs. gross fixed capital formation, both as % of GDP"
         >
           {capitalFormation && fixedCapitalFormation ? (
-            <TimeSeriesChart series={[capitalFormation, fixedCapitalFormation]} variant="line" />
+            <RangeChart series={[capitalFormation, fixedCapitalFormation]} variant="line" />
           ) : (
             <p className="text-sm text-ink-soft">Series unavailable.</p>
           )}
@@ -103,9 +103,9 @@ export default function InvestmentTrackerPage() {
         </ResearchNote>
       </section>
 
-      {/* ---------------------------------------------------------- */}
-      {/* Plans vs. capital that actually arrives                     */}
-      {/* ---------------------------------------------------------- */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Plans vs. capital that actually arrives                             */}
+      {/* ------------------------------------------------------------------ */}
       <section className="flex flex-col gap-5">
         <header>
           <p className="font-label text-xs font-semibold uppercase tracking-wide text-secondary">Intentions vs. reality</p>
@@ -125,7 +125,7 @@ export default function InvestmentTrackerPage() {
           subtitle="BOI-approved investment applications vs. FDI net inflows, both in USD billion"
         >
           {boiApproved && fdiUsdBn ? (
-            <TimeSeriesChart series={[boiApproved, fdiUsdBn]} variant="line" />
+            <RangeChart series={[boiApproved, fdiUsdBn]} variant="line" />
           ) : (
             <p className="text-sm text-ink-soft">Series unavailable.</p>
           )}
@@ -145,9 +145,9 @@ export default function InvestmentTrackerPage() {
         </ResearchNote>
       </section>
 
-      {/* ---------------------------------------------------------- */}
-      {/* Domestic appetite vs. the foreign vote of confidence        */}
-      {/* ---------------------------------------------------------- */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Domestic appetite vs. the foreign vote of confidence               */}
+      {/* ------------------------------------------------------------------ */}
       <section className="flex flex-col gap-5">
         <header>
           <p className="font-label text-xs font-semibold uppercase tracking-wide text-secondary">Two kinds of confidence</p>
@@ -166,7 +166,7 @@ export default function InvestmentTrackerPage() {
           subtitle="Private investment growth (annual %) vs. FDI net inflows (% of GDP)"
         >
           {privateInvestmentGrowth && fdiShareGdp ? (
-            <TimeSeriesChart series={[privateInvestmentGrowth, fdiShareGdp]} variant="line" />
+            <RangeChart series={[privateInvestmentGrowth, fdiShareGdp]} variant="line" />
           ) : (
             <p className="text-sm text-ink-soft">Series unavailable.</p>
           )}

@@ -1,6 +1,6 @@
 import GlassCard from '@/components/GlassCard';
 import MetricCard from '@/components/MetricCard';
-import TimeSeriesChart from '@/components/TimeSeriesChart';
+import RangeChart from '@/components/RangeChart';
 import ResearchNote from '@/components/ResearchNote';
 import DemoDataBanner from '@/components/DemoDataBanner';
 import SourceBadge from '@/components/SourceBadge';
@@ -36,9 +36,9 @@ export default function TourismMonitorPage() {
 
       <DemoDataBanner />
 
-      {/* ---------------------------------------------------------- */}
-      {/* How close is the recovery, and is the pace holding up?      */}
-      {/* ---------------------------------------------------------- */}
+      {/* ------------------------------------------------------------------ */}
+      {/* How close is the recovery, and is the pace holding up?              */}
+      {/* ------------------------------------------------------------------ */}
       <section className="flex flex-col gap-5">
         <header>
           <p className="font-label text-xs font-semibold uppercase tracking-wide text-secondary">The headline gauge</p>
@@ -65,7 +65,7 @@ export default function TourismMonitorPage() {
           subtitle="Tourism recovery index (2019 = 100) vs. visitor-arrivals index (2015 = 100)"
         >
           {recoveryIndex && arrivalsIndex ? (
-            <TimeSeriesChart series={[recoveryIndex, arrivalsIndex]} variant="line" />
+            <RangeChart series={[recoveryIndex, arrivalsIndex]} variant="line" />
           ) : (
             <p className="text-sm text-ink-soft">Series unavailable.</p>
           )}
@@ -94,9 +94,9 @@ export default function TourismMonitorPage() {
         </ResearchNote>
       </section>
 
-      {/* ---------------------------------------------------------- */}
-      {/* Are arrivals and receipts recovering at the same pace?      */}
-      {/* ---------------------------------------------------------- */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Are arrivals and receipts recovering at the same pace?              */}
+      {/* ------------------------------------------------------------------ */}
       <section className="flex flex-col gap-5">
         <header>
           <p className="font-label text-xs font-semibold uppercase tracking-wide text-secondary">Volume vs. spending</p>
@@ -115,7 +115,7 @@ export default function TourismMonitorPage() {
           subtitle="Year-over-year change in visitor arrivals vs. year-over-year change in tourism receipts"
         >
           {arrivalsYoy && receiptsYoy ? (
-            <TimeSeriesChart series={[arrivalsYoy, receiptsYoy]} variant="line" />
+            <RangeChart series={[arrivalsYoy, receiptsYoy]} variant="line" />
           ) : (
             <p className="text-sm text-ink-soft">Series unavailable.</p>
           )}
@@ -133,9 +133,9 @@ export default function TourismMonitorPage() {
         </ResearchNote>
       </section>
 
-      {/* ---------------------------------------------------------- */}
-      {/* How much does the economy still lean on tourism?            */}
-      {/* ---------------------------------------------------------- */}
+      {/* ------------------------------------------------------------------ */}
+      {/* How much does the economy still lean on tourism?                    */}
+      {/* ------------------------------------------------------------------ */}
       <section className="flex flex-col gap-5">
         <header>
           <p className="font-label text-xs font-semibold uppercase tracking-wide text-secondary">The exposure question</p>
@@ -152,14 +152,14 @@ export default function TourismMonitorPage() {
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
           <GlassCard title="Tourism receipts as a share of the whole economy" subtitle="Tourism receipts, % of GDP (USD terms)">
             {receiptsShareGdp ? (
-              <TimeSeriesChart series={receiptsShareGdp} />
+              <RangeChart series={receiptsShareGdp} />
             ) : (
               <p className="text-sm text-ink-soft">Series unavailable.</p>
             )}
           </GlassCard>
           <GlassCard title="Tourism's weight in Thailand's export earnings" subtitle="Tourism receipts, % of total exports">
             {receiptsShareExports ? (
-              <TimeSeriesChart series={receiptsShareExports} />
+              <RangeChart series={receiptsShareExports} />
             ) : (
               <p className="text-sm text-ink-soft">Series unavailable.</p>
             )}

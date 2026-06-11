@@ -1,6 +1,6 @@
 import GlassCard from '@/components/GlassCard';
 import MetricCard from '@/components/MetricCard';
-import TimeSeriesChart from '@/components/TimeSeriesChart';
+import RangeChart from '@/components/RangeChart';
 import ResearchNote from '@/components/ResearchNote';
 import DemoDataBanner from '@/components/DemoDataBanner';
 import SourceBadge from '@/components/SourceBadge';
@@ -37,9 +37,9 @@ export default function HouseholdDebtPage() {
 
       <DemoDataBanner />
 
-      {/* ---------------------------------------------------------- */}
-      {/* How large has the debt load grown, and is it slowing?       */}
-      {/* ---------------------------------------------------------- */}
+      {/* ------------------------------------------------------------------ */}
+      {/* How large has the debt load grown, and is it slowing?               */}
+      {/* ------------------------------------------------------------------ */}
       <section className="flex flex-col gap-5">
         <header>
           <p className="font-label text-xs font-semibold uppercase tracking-wide text-secondary">The headline ratio</p>
@@ -70,7 +70,7 @@ export default function HouseholdDebtPage() {
           subtitle="Household debt (% of GDP) vs. household consumption growth (annual %)"
         >
           {householdDebt && consumptionGrowth ? (
-            <TimeSeriesChart series={[householdDebt, consumptionGrowth]} variant="line" />
+            <RangeChart series={[householdDebt, consumptionGrowth]} variant="line" />
           ) : (
             <p className="text-sm text-ink-soft">Series unavailable.</p>
           )}
@@ -111,9 +111,9 @@ export default function HouseholdDebtPage() {
         </ResearchNote>
       </section>
 
-      {/* ---------------------------------------------------------- */}
-      {/* Is the buildup concentrated in households, or broader?      */}
-      {/* ---------------------------------------------------------- */}
+      {/* ------------------------------------------------------------------ */}
+      {/* Is the buildup concentrated in households, or broader?              */}
+      {/* ------------------------------------------------------------------ */}
       <section className="flex flex-col gap-5">
         <header>
           <p className="font-label text-xs font-semibold uppercase tracking-wide text-secondary">Whose balance sheet</p>
@@ -129,10 +129,10 @@ export default function HouseholdDebtPage() {
         </header>
         <GlassCard
           title="Three balance sheets, one chart"
-          subtitle="Household debt, public debt, and external debt &mdash; each as a share of GDP"
+          subtitle="Household debt, public debt, and external debt — each as a share of GDP"
         >
           {householdDebt && publicDebt && externalDebtShare ? (
-            <TimeSeriesChart series={[householdDebt, publicDebt, externalDebtShare]} variant="line" />
+            <RangeChart series={[householdDebt, publicDebt, externalDebtShare]} variant="line" />
           ) : (
             <p className="text-sm text-ink-soft">Series unavailable.</p>
           )}
@@ -151,9 +151,9 @@ export default function HouseholdDebtPage() {
         </ResearchNote>
       </section>
 
-      {/* ---------------------------------------------------------- */}
-      {/* How much pressure has built up overall?                     */}
-      {/* ---------------------------------------------------------- */}
+      {/* ------------------------------------------------------------------ */}
+      {/* How much pressure has built up overall?                             */}
+      {/* ------------------------------------------------------------------ */}
       <section className="flex flex-col gap-5">
         <header>
           <p className="font-label text-xs font-semibold uppercase tracking-wide text-secondary">Putting it on one scale</p>
@@ -167,9 +167,9 @@ export default function HouseholdDebtPage() {
             hotter than that average.
           </p>
         </header>
-        <GlassCard title="Debt pressure index" subtitle="Composite z-score &mdash; positive values mark periods of above-average debt strain">
+        <GlassCard title="Debt pressure index" subtitle="Composite z-score — positive values mark periods of above-average debt strain">
           {debtPressure ? (
-            <TimeSeriesChart series={debtPressure} />
+            <RangeChart series={debtPressure} />
           ) : (
             <p className="text-sm text-ink-soft">Series unavailable.</p>
           )}
@@ -179,7 +179,7 @@ export default function HouseholdDebtPage() {
             )}
           </div>
         </GlassCard>
-        <ResearchNote title="What a composite like this is &mdash; and isn't">
+        <ResearchNote title="What a composite like this is — and isn't">
           <p>
             A single blended number is convenient, but it also hides its ingredients: it can rise
             because every component nudged up a little, or because one component spiked while the
