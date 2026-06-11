@@ -26,18 +26,13 @@ export type NavItem = {
   description: string;
 };
 
-// Order mirrors the spec's "Main Navigation" list. The Phase-1 (Frontend
-// MVP) six from "Build Priority" -- Command Center, Macro Outlook, Sector
-// Intelligence, Statistical Engine, Forecast Lab, Data Sources -- shipped
-// first. Tourism Monitor, Household & Debt, and Investment Tracker were
-// added next because the compiled dataset has solid, traceable series for
-// each (tourism arrivals/receipts/recovery, household & public/external
-// debt, FDI/BOI investment/capital formation). Province Map, Trade
-// Network, and Research Library remain clean placeholders: the dataset
-// has no provincial/geographic breakdowns or bilateral trade-partner
-// series, and Research Library would need real written research this
-// dashboard doesn't have -- building those out now would mean dressing up
-// invented figures as real ones, the opposite of this project's honesty rule.
+// Order mirrors the spec's "Main Navigation" list. The earlier build
+// phases shipped the core macro, sector, statistical, and data routes
+// first, then expanded into tourism, debt, investment, and now the
+// geography / trade / research surfaces. The newest pages stay honest:
+// where the dataset lacks province-level or bilateral detail, they use
+// explicit proxy analysis and name the limitation rather than inventing
+// unsupported granular numbers.
 export const NAV_ITEMS: NavItem[] = [
   {
     label: 'Command Center',
@@ -64,15 +59,15 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Province Map',
     href: '/province-map',
     icon: Map,
-    implemented: false,
-    description: 'A geographic lens on growth, investment, and disparity across provinces.',
+    implemented: true,
+    description: 'A geographic lens on concentration, urbanization, and regional divergence.',
   },
   {
     label: 'Trade Network',
     href: '/trade-network',
     icon: Network,
-    implemented: false,
-    description: 'Who Thailand trades with, and how those ties are shifting.',
+    implemented: true,
+    description: 'External demand, buffers, and the channels that carry global shocks inward.',
   },
   {
     label: 'Tourism Monitor',
@@ -113,8 +108,8 @@ export const NAV_ITEMS: NavItem[] = [
     label: 'Research Library',
     href: '/research-library',
     icon: BookOpen,
-    implemented: false,
-    description: 'Notes, methodology write-ups, and further reading.',
+    implemented: true,
+    description: 'Method notes, source structure, and deeper reading paths.',
   },
   {
     label: 'Data Sources',

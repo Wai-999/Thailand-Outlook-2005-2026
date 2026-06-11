@@ -115,10 +115,18 @@ export default function TourismMonitorPage() {
           subtitle="Year-over-year change in visitor arrivals vs. year-over-year change in tourism receipts"
         >
           {arrivalsYoy && receiptsYoy ? (
-            <RangeChart series={[arrivalsYoy, receiptsYoy]} variant="line" />
+            <RangeChart
+              series={[arrivalsYoy, receiptsYoy]}
+              variant="line"
+              yDomain={[-100, 120]}
+            />
           ) : (
             <p className="text-sm text-ink-soft">Series unavailable.</p>
           )}
+          <p className="mt-2 rounded-[var(--radius-md)] border border-amber-200 bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800">
+            <strong>Chart note:</strong> The 2022 bar registers ~2,500 % YoY because arrivals collapsed to near-zero in 2021 (COVID lock-down) — a single visitor returning would look like infinite growth from that base.
+            The Y-axis is capped at 120 % to keep other years readable. The spike is real, but comparing any 2022 reading to the surrounding years is misleading; treat 2022–2023 as a rebound period rather than a growth signal.
+          </p>
         </GlassCard>
         <ResearchNote title="How to read this">
           <p>

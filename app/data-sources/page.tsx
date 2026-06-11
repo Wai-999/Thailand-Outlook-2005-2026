@@ -151,8 +151,8 @@ export default function DataSourcesPage() {
           </GlassCard>
           <GlassCard padded={false} className="p-5">
             <p className="font-label text-xs font-semibold uppercase tracking-wide text-ink-soft">Reliability mix</p>
-            <p className="font-display mt-1 text-3xl font-bold text-ink">{reliabilityCounts.find((r) => r.key === 'demo')?.count ?? 0}/{sources.length}</p>
-            <p className="mt-1 text-xs text-ink-soft">of the named sources are this project&rsquo;s own compiled snapshots</p>
+            <p className="font-display mt-1 text-3xl font-bold text-ink">{reliabilityCounts.find((r) => r.key === 'secondary')?.count ?? 0}/{sources.length}</p>
+            <p className="mt-1 text-xs text-ink-soft">of the named sources are compiled research bundles (not direct API feeds)</p>
           </GlassCard>
         </div>
         <GlassCard

@@ -155,7 +155,7 @@ export default function CommandCenterPage() {
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
               href="/macro-outlook"
-              className="font-label inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[var(--accent-indigo)] shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:shadow-xl"
+              className="font-label inline-flex items-center gap-2 rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-[#312e81] shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:shadow-xl"
             >
               Explore the macro outlook
               <ArrowRight size={16} strokeWidth={2.25} />

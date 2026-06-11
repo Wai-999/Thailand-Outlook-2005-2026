@@ -52,7 +52,7 @@ export default function ChartExportControls({
 
   return (
     <div
-      className="absolute right-0 top-0 z-10 flex items-center gap-1 opacity-0 transition-opacity duration-150 group-hover/chart:opacity-100"
+      className="flex items-center gap-1 opacity-0 transition-opacity duration-150 group-hover/chart:opacity-100"
       aria-label="Chart actions"
     >
       {/* Export PNG */}
@@ -115,9 +115,12 @@ export function ChartExportWrapper({
   const { containerRef, exportPng, exporting } = useChartExport(filename);
 
   return (
-    <div ref={containerRef} className="group/chart relative">
-      <ChartExportControls exportPng={exportPng} exporting={exporting} />
+    <div ref={containerRef} className="group/chart flex flex-col gap-1">
       {children}
+      {/* Export row — sits below the chart, never overlaps chart controls */}
+      <div className="flex justify-end">
+        <ChartExportControls exportPng={exportPng} exporting={exporting} />
+      </div>
     </div>
   );
 }
