@@ -24,15 +24,6 @@ function alignPair(a: IndicatorSeries, b: IndicatorSeries): { x: number[]; y: nu
   return { x, y };
 }
 
-/** Restricts every series in the set down to dates they all share, in order. */
-function alignMany(list: { label: string; series: IndicatorSeries }[]): { label: string; values: number[] }[] {
-  const sets = list.map(({ series }) => new Set(series.points.map((p) => p.date)));
-  const commonDates = list[0].series.points.map((p) => p.date).filter((d) => sets.every((s) => s.has(d)));
-  return list.map(({ label, series }) => {
-    const map = new Map(series.points.map((p) => [p.date, p.value]));
-    return { label, values: commonDates.map((d) => map.get(d) as number) };
-  });
-}
 
 const DESCRIPTIVE_SET: { code: string; label: string; unit: string; goodDirection: 'up' | 'down' | 'neutral' }[] = [
   { code: 'real_gdp_growth_pct',    label: 'Real GDP growth',         unit: '%',          goodDirection: 'up'      },
@@ -85,7 +76,10 @@ export default function StatisticalEnginePage() {
   const correlationSeries = CORRELATION_SET.map(({ code, label }) => ({ label, series: findSeries(code) })).filter(
     (e): e is { label: string; series: IndicatorSeries } => Boolean(e.series),
   );
-  const matrixData = alignMany(correlationSeries);
+  const rawMatrixSeries = correlationSeries.map(({ label, series }) => ({
+    label,
+    points: series.points,
+  }));
 
   const gdp = findSeries('real_gdp_growth_pct');
   const investment = findSeries('investment_capital_private_investment_growth');
@@ -241,7 +235,7 @@ export default function StatisticalEnginePage() {
         </header>
         <GlassCard>
           {correlationSeries.length === CORRELATION_SET.length ? (
-            <CorrelationMatrix series={matrixData} />
+            <CorrelationMatrix series={rawMatrixSeries} />
           ) : (
             <p className="text-sm text-ink-soft">Series unavailable.</p>
           )}
