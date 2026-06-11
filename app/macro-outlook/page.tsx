@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import GlassCard from '@/components/GlassCard';
 import RangeChart from '@/components/RangeChart';
 import ResearchNote from '@/components/ResearchNote';
@@ -5,6 +6,7 @@ import DemoDataBanner from '@/components/DemoDataBanner';
 import SourceBadge from '@/components/SourceBadge';
 import MacroTrendSection from './MacroTrendSection';
 import CountryCompare from './CountryCompare';
+import { ChartExportWrapper } from '@/components/ChartExportControls';
 import { findSeries } from '@/lib/data';
 
 export default function MacroOutlookPage() {
@@ -51,7 +53,9 @@ export default function MacroOutlookPage() {
           subtitle="Real GDP growth vs. household consumption growth vs. private investment growth, annual"
         >
           {gdpGrowth && consumption && investment ? (
-            <RangeChart series={[gdpGrowth, consumption, investment]} variant="line" />
+            <ChartExportWrapper filename="macro-domestic-engine">
+              <RangeChart series={[gdpGrowth, consumption, investment]} variant="line" />
+            </ChartExportWrapper>
           ) : (
             <p className="text-sm text-ink-soft">Series unavailable.</p>
           )}
@@ -98,7 +102,9 @@ export default function MacroOutlookPage() {
             subtitle="Headline CPI inflation vs. the Bank of Thailand's policy interest rate"
           >
             {inflation && policyRate ? (
-              <RangeChart series={[inflation, policyRate]} variant="line" />
+              <ChartExportWrapper filename="macro-prices-policy">
+                <RangeChart series={[inflation, policyRate]} variant="line" />
+              </ChartExportWrapper>
             ) : (
               <p className="text-sm text-ink-soft">Series unavailable.</p>
             )}
@@ -108,7 +114,9 @@ export default function MacroOutlookPage() {
             subtitle="Household consumption growth vs. goods-export growth, year over year"
           >
             {consumption && exportsYoy ? (
-              <RangeChart series={[consumption, exportsYoy]} variant="line" />
+              <ChartExportWrapper filename="macro-demand-home-abroad">
+                <RangeChart series={[consumption, exportsYoy]} variant="line" />
+              </ChartExportWrapper>
             ) : (
               <p className="text-sm text-ink-soft">Series unavailable.</p>
             )}
@@ -148,7 +156,9 @@ export default function MacroOutlookPage() {
           </p>
         </header>
         {gdpGrowth ? (
-          <MacroTrendSection gdpGrowth={gdpGrowth} />
+          <Suspense fallback={<div className="h-64 animate-pulse rounded-xl bg-white/30" />}>
+            <MacroTrendSection gdpGrowth={gdpGrowth} />
+          </Suspense>
         ) : (
           <p className="text-sm text-ink-soft">GDP growth series unavailable.</p>
         )}

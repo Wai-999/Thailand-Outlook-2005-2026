@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo, memo, useRef } from 'react';
-import { Download, Save, X, RefreshCw, ChevronDown } from 'lucide-react';
+import { Download, Save, X, RefreshCw, ChevronDown, LayoutList, Table2 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -150,6 +150,15 @@ export default function UserDataEditor() {
   const [dataset, setDataset] = useState<'macro' | 'micro'>('macro');
   const [sectorFilter, setSectorFilter] = useState<string>('');
   const [yearRange, setYearRange] = useState<YearRange>('all');
+  // Mobile card view — auto-enable below 768px on first render
+  const [mobileView, setMobileView] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    setMobileView(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setMobileView(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   const [rows, setRows] = useState<DataRow[]>([]);
   const [sectors, setSectors] = useState<string[]>([]);
@@ -378,6 +387,16 @@ export default function UserDataEditor() {
 
           <div className="flex-1" />
 
+          {/* Mobile / table view toggle */}
+          <button
+            onClick={() => setMobileView((v) => !v)}
+            title={mobileView ? 'Switch to table view' : 'Switch to card view'}
+            className="flex items-center gap-1.5 rounded-lg border border-[var(--glass-border)] bg-[var(--surface)] px-3 py-1.5 text-xs font-medium text-ink-muted transition-colors hover:bg-white hover:text-ink"
+          >
+            {mobileView ? <Table2 className="h-3.5 w-3.5" /> : <LayoutList className="h-3.5 w-3.5" />}
+            <span className="hidden sm:inline">{mobileView ? 'Table' : 'Cards'}</span>
+          </button>
+
           <div className="flex shrink-0 items-center gap-1.5">
             <button
               onClick={handleDownload}
@@ -436,7 +455,37 @@ export default function UserDataEditor() {
               Expected: public/data/user/{dataset === 'macro' ? 'thailand_macro.csv' : 'thailand_micro.csv'}
             </p>
           </div>
+        ) : mobileView ? (
+          /* ── Card view (mobile-first, also togglable on desktop) ── */
+          <div className="flex flex-col gap-2 overflow-auto p-3" style={{ maxHeight: 'calc(100vh - 320px)', minHeight: '280px' }}>
+            {rows.length === 0 ? (
+              <p className="py-8 text-center text-sm text-ink-soft">No rows match the current filters.</p>
+            ) : rows.map((row) => {
+              const pending = pendingByRow.get(row.rowKey) ?? EMPTY_PENDING;
+              return (
+                <div key={row.rowKey} className="rounded-lg border border-[var(--glass-border)] bg-white/80 p-3">
+                  <div className="mb-2 flex min-w-0 items-start justify-between gap-2">
+                    <p className="min-w-0 text-sm font-medium text-ink">{row.indicatorName}</p>
+                    <span className="shrink-0 rounded-full bg-[var(--glass-border)] px-2 py-0.5 text-[10px] text-ink-soft">{row.unit}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-x-1 gap-y-2 sm:grid-cols-4">
+                    {visibleYears.map((yr) => (
+                      <div key={yr}>
+                        <p className="mb-0.5 text-[10px] font-medium text-ink-soft">{yr}</p>
+                        <EditableCell
+                          baseValue={row.values[yr] ?? ''}
+                          pendingValue={pending[yr]}
+                          onCommit={(value) => handleCellChange(row.rowKey, yr, value)}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         ) : (
+          /* ── Table view ── */
           <div className="overflow-auto" style={{ maxHeight: 'calc(100vh - 320px)', minHeight: '280px' }}>
             <table className="min-w-max w-full text-sm">
               <thead className="sticky top-0 z-10 bg-[var(--surface-strong)]">

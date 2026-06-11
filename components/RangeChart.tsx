@@ -327,92 +327,102 @@ export default function RangeChart({
       </div>
 
       {/* ── Chart ─────────────────────────────────────────────────────── */}
-      <div
-        style={{ width: '100%', height }}
-        className={`relative select-none ${isDragging ? 'cursor-col-resize' : 'cursor-crosshair'}`}
-      >
-        {hasDemo && (
-          <span className="absolute right-1 top-0 z-10 rounded-full bg-[var(--secondary)]/15 px-2 py-0.5 text-[10px] font-medium text-secondary">
-            Modeled estimate
-          </span>
-        )}
-
-        {!isHydrated ? (
-          <div aria-hidden className="h-full w-full rounded-[var(--radius-md)] bg-white/25" />
-        ) : (
-          <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={height}>
-            {mode === 'area' ? (
-              <AreaChart {...chartProps}>
-                <defs>
-                  <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={colors?.[0] ?? SERIES_COLORS[0]} stopOpacity={0.32} />
-                    <stop offset="100%" stopColor={colors?.[0] ?? SERIES_COLORS[0]} stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="var(--glass-border)" strokeDasharray="3 5" vertical={false} />
-                <XAxis dataKey="date" tickFormatter={formatTick} {...axisProps} minTickGap={28} />
-                <YAxis
-                  {...axisProps}
-                  width={56}
-                  domain={yDomain ?? ['auto', 'auto']}
-                  tickFormatter={(v: number) => formatValue(v, unit ?? '')}
-                />
-                <Tooltip
-                  content={<RcTooltip unit={unit} />}
-                  cursor={{ stroke: 'var(--glass-border)', strokeDasharray: '3 3' }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey={list[0].indicatorName}
-                  stroke={colors?.[0] ?? SERIES_COLORS[0]}
-                  strokeWidth={2}
-                  fill={`url(#${gradId})`}
-                  connectNulls
-                  dot={false}
-                  activeDot={{ r: 4, strokeWidth: 0 }}
-                  isAnimationActive={false}
-                />
-                {eventLines}
-                {dragArea}
-              </AreaChart>
-            ) : (
-              <LineChart {...chartProps}>
-                <CartesianGrid stroke="var(--glass-border)" strokeDasharray="3 5" vertical={false} />
-                <XAxis dataKey="date" tickFormatter={formatTick} {...axisProps} minTickGap={28} />
-                <YAxis
-                  {...axisProps}
-                  width={56}
-                  domain={yDomain ?? ['auto', 'auto']}
-                  tickFormatter={(v: number) => formatValue(v, unit ?? '')}
-                />
-                <Tooltip
-                  content={<RcTooltip unit={unit} />}
-                  cursor={{ stroke: 'var(--glass-border)', strokeDasharray: '3 3' }}
-                />
-                <Legend
-                  wrapperStyle={{ fontSize: 11, color: 'var(--text-soft)' }}
-                  iconType="circle"
-                  iconSize={8}
-                />
-                {list.map((s, i) => (
-                  <Line
-                    key={s.indicatorCode}
-                    type="monotone"
-                    dataKey={s.indicatorName}
-                    stroke={colors?.[i] ?? SERIES_COLORS[i % SERIES_COLORS.length]}
-                    strokeWidth={2}
-                    dot={false}
-                    connectNulls
-                    activeDot={{ r: 4, strokeWidth: 0 }}
-                    isAnimationActive={false}
-                  />
-                ))}
-                {eventLines}
-                {dragArea}
-              </LineChart>
+      {/* Mobile: horizontal scroll + fade affordance for dense time series */}
+      <div className="relative overflow-x-auto md:overflow-visible">
+        <div className="min-w-[400px] md:min-w-0">
+          <div
+            style={{ width: '100%', height }}
+            className={`relative select-none ${isDragging ? 'cursor-col-resize' : 'cursor-crosshair'}`}
+          >
+            {hasDemo && (
+              <span className="absolute right-1 top-0 z-10 rounded-full bg-[var(--secondary)]/15 px-2 py-0.5 text-[10px] font-medium text-secondary">
+                Modeled estimate
+              </span>
             )}
-          </ResponsiveContainer>
-        )}
+
+            {!isHydrated ? (
+              <div aria-hidden className="h-full w-full rounded-[var(--radius-md)] bg-white/25" />
+            ) : (
+              <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={height}>
+                {mode === 'area' ? (
+                  <AreaChart {...chartProps}>
+                    <defs>
+                      <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={colors?.[0] ?? SERIES_COLORS[0]} stopOpacity={0.32} />
+                        <stop offset="100%" stopColor={colors?.[0] ?? SERIES_COLORS[0]} stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid stroke="var(--glass-border)" strokeDasharray="3 5" vertical={false} />
+                    <XAxis dataKey="date" tickFormatter={formatTick} {...axisProps} minTickGap={28} />
+                    <YAxis
+                      {...axisProps}
+                      width={56}
+                      domain={yDomain ?? ['auto', 'auto']}
+                      tickFormatter={(v: number) => formatValue(v, unit ?? '')}
+                    />
+                    <Tooltip
+                      content={<RcTooltip unit={unit} />}
+                      cursor={{ stroke: 'var(--glass-border)', strokeDasharray: '3 3' }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey={list[0].indicatorName}
+                      stroke={colors?.[0] ?? SERIES_COLORS[0]}
+                      strokeWidth={2}
+                      fill={`url(#${gradId})`}
+                      connectNulls
+                      dot={false}
+                      activeDot={{ r: 4, strokeWidth: 0 }}
+                      isAnimationActive={false}
+                    />
+                    {eventLines}
+                    {dragArea}
+                  </AreaChart>
+                ) : (
+                  <LineChart {...chartProps}>
+                    <CartesianGrid stroke="var(--glass-border)" strokeDasharray="3 5" vertical={false} />
+                    <XAxis dataKey="date" tickFormatter={formatTick} {...axisProps} minTickGap={28} />
+                    <YAxis
+                      {...axisProps}
+                      width={56}
+                      domain={yDomain ?? ['auto', 'auto']}
+                      tickFormatter={(v: number) => formatValue(v, unit ?? '')}
+                    />
+                    <Tooltip
+                      content={<RcTooltip unit={unit} />}
+                      cursor={{ stroke: 'var(--glass-border)', strokeDasharray: '3 3' }}
+                    />
+                    <Legend
+                      wrapperStyle={{ fontSize: 11, color: 'var(--text-soft)' }}
+                      iconType="circle"
+                      iconSize={8}
+                    />
+                    {list.map((s, i) => (
+                      <Line
+                        key={s.indicatorCode}
+                        type="monotone"
+                        dataKey={s.indicatorName}
+                        stroke={colors?.[i] ?? SERIES_COLORS[i % SERIES_COLORS.length]}
+                        strokeWidth={2}
+                        dot={false}
+                        connectNulls
+                        activeDot={{ r: 4, strokeWidth: 0 }}
+                        isAnimationActive={false}
+                      />
+                    ))}
+                    {eventLines}
+                    {dragArea}
+                  </LineChart>
+                )}
+              </ResponsiveContainer>
+            )}
+          </div>
+        </div>
+        {/* Scroll affordance — visible on mobile only */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-white/70 to-transparent md:hidden"
+        />
       </div>
 
       {/* ── Range indicator bar ───────────────────────────────────────── */}

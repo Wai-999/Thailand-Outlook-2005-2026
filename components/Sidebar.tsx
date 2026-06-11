@@ -129,9 +129,9 @@ function SidebarContent({
           <button
             onClick={onClose}
             aria-label="Close navigation"
-            className="ml-auto rounded-lg p-1.5 text-white/35 hover:bg-white/8 hover:text-white/70 transition-colors"
+            className="ml-auto flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-white/35 transition-colors hover:bg-white/8 hover:text-white/70"
           >
-            <X size={16} />
+            <X size={18} />
           </button>
         )}
       </div>

@@ -4,6 +4,7 @@ import TimeSeriesChart from '@/components/TimeSeriesChart';
 import ResearchNote from '@/components/ResearchNote';
 import DemoDataBanner from '@/components/DemoDataBanner';
 import SourceBadge from '@/components/SourceBadge';
+import { ChartExportWrapper } from '@/components/ChartExportControls';
 import { findSeries, latestPoint, formatValue } from '@/lib/data';
 
 const LEAD_LAG_CODES: { code: string; label: string }[] = [
@@ -87,7 +88,9 @@ export default function SectorIntelligencePage() {
           subtitle="Value added by broad sector, as a share of GDP -- the slow-moving structure underneath the year-to-year noise"
         >
           {industry && manufacturing && services ? (
-            <TimeSeriesChart series={[services, industry, manufacturing]} variant="line" />
+            <ChartExportWrapper filename="sector-gdp-shares">
+              <TimeSeriesChart series={[services, industry, manufacturing]} variant="line" />
+            </ChartExportWrapper>
           ) : (
             <p className="text-sm text-ink-soft">Series unavailable.</p>
           )}
@@ -135,7 +138,9 @@ export default function SectorIntelligencePage() {
             subtitle="Tourism recovery index (2019 = 100) vs. real GDP growth, annual"
           >
             {tourismRecovery && gdpGrowth ? (
-              <TimeSeriesChart series={[tourismRecovery, gdpGrowth]} variant="line" />
+              <ChartExportWrapper filename="sector-tourism-recovery">
+                <TimeSeriesChart series={[tourismRecovery, gdpGrowth]} variant="line" />
+              </ChartExportWrapper>
             ) : (
               <p className="text-sm text-ink-soft">Series unavailable.</p>
             )}
@@ -145,7 +150,9 @@ export default function SectorIntelligencePage() {
             subtitle="Visitor arrivals (millions) vs. tourism receipts as a share of GDP"
           >
             {tourismArrivals && tourismReceiptsShare ? (
-              <TimeSeriesChart series={[tourismArrivals, tourismReceiptsShare]} variant="line" />
+              <ChartExportWrapper filename="sector-tourism-size">
+                <TimeSeriesChart series={[tourismArrivals, tourismReceiptsShare]} variant="line" />
+              </ChartExportWrapper>
             ) : (
               <p className="text-sm text-ink-soft">Series unavailable.</p>
             )}

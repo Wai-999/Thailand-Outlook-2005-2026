@@ -1,11 +1,14 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import GlassCard from '@/components/GlassCard';
 import RangeChart from '@/components/RangeChart';
 import DataFreshnessBadge from '@/components/DataFreshnessBadge';
+import { ChartExportWrapper } from '@/components/ChartExportControls';
 import { ols } from '@/lib/stats';
 import { formatValue } from '@/lib/data';
+import { PARAM, encodeRange, decodeRange } from '@/lib/urlState';
 import type { IndicatorSeries } from '@/lib/types';
 
 /** Build a trend-line series + OLS fit from a set of GDP points. */
@@ -33,19 +36,36 @@ function buildTrend(base: IndicatorSeries): {
  * The "above/below trend" section of Macro Outlook.
  *
  * Lives in a client component so the drag-select range on the chart can
- * simultaneously refit the OLS trend and update the "Show the work" stats
- * card on the right. Parent page passes the full gdpGrowth series as a prop;
- * this component handles all interactive state.
+ * simultaneously refit the OLS trend, update the stats card, and write
+ * the selected range into the URL (SPEC-10 deep-link support).
  */
 export default function MacroTrendSection({
   gdpGrowth,
 }: {
   gdpGrowth: IndicatorSeries;
 }) {
-  const [rangeStart, setRangeStart] = useState<string | null>(null);
-  const [rangeEnd, setRangeEnd] = useState<string | null>(null);
+  // ── URL-synced range state (SPEC-10) ───────────────────────────────────────
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { start: initialStart, end: initialEnd } = decodeRange(searchParams);
+
+  const [rangeStart, setRangeStart] = useState<string | null>(initialStart);
+  const [rangeEnd, setRangeEnd] = useState<string | null>(initialEnd);
 
   const isFiltered = !!(rangeStart && rangeEnd);
+
+  const handleRangeChange = useCallback(
+    (start: string | null, end: string | null) => {
+      setRangeStart(start);
+      setRangeEnd(end);
+
+      // Push range into URL so it survives a share / page refresh
+      const next = new URLSearchParams(searchParams.toString());
+      encodeRange(next, start, end);
+      router.replace(`?${next.toString()}`, { scroll: false });
+    },
+    [router, searchParams],
+  );
 
   // Filtered GDP series — recomputed only when range changes
   const filteredSeries: IndicatorSeries = useMemo(
@@ -80,11 +100,6 @@ export default function MacroTrendSection({
       ]
     : [{ ...filteredSeries, indicatorName: gdpGrowth.indicatorName }];
 
-  function handleRangeChange(start: string | null, end: string | null) {
-    setRangeStart(start);
-    setRangeEnd(end);
-  }
-
   const chartSubtitle = isFiltered
     ? `Trend refitted to ${rangeStart?.slice(0, 4)}–${rangeEnd?.slice(0, 4)} · drag chart to adjust selection`
     : `A simple OLS fit through every year in the sample — the straight line is the 'expected' path, not a forecast`;
@@ -100,11 +115,13 @@ export default function MacroTrendSection({
         title="Real GDP growth vs. its own long-run trend line"
         subtitle={chartSubtitle}
       >
-        <RangeChart
-          series={chartSeries}
-          variant="line"
-          onRangeChange={handleRangeChange}
-        />
+        <ChartExportWrapper filename="macro-gdp-trend">
+          <RangeChart
+            series={chartSeries}
+            variant="line"
+            onRangeChange={handleRangeChange}
+          />
+        </ChartExportWrapper>
         <DataFreshnessBadge series={gdpGrowth} />
       </GlassCard>
 

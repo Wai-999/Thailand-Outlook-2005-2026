@@ -22,12 +22,19 @@ type UIState = {
   /** Whether historical event annotations are shown on time-series charts. */
   showEvents: boolean;
   toggleEvents: () => void;
+  /** Whether the KPI threshold settings drawer is open. */
+  alertsDrawerOpen: boolean;
+  toggleAlertsDrawer: () => void;
+  setAlertsDrawerOpen: (open: boolean) => void;
 };
 
 export const useUIStore = create<UIState>((set, get) => ({
   sidebarOpen: true,
   showEvents: false,
   toggleEvents: () => set((s) => ({ showEvents: !s.showEvents })),
+  alertsDrawerOpen: false,
+  toggleAlertsDrawer: () => set((s) => ({ alertsDrawerOpen: !s.alertsDrawerOpen })),
+  setAlertsDrawerOpen: (open) => set({ alertsDrawerOpen: open }),
   toggleSidebar: () => {
     const next = !get().sidebarOpen;
     set({ sidebarOpen: next });

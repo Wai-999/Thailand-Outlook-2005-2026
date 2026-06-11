@@ -6,6 +6,9 @@ import TimeSeriesChart from '@/components/TimeSeriesChart';
 import ResearchNote from '@/components/ResearchNote';
 import DemoDataBanner from '@/components/DemoDataBanner';
 import SourceBadge from '@/components/SourceBadge';
+import ThresholdDrawer from '@/components/ThresholdDrawer';
+import AlertsConfigButton from '@/components/AlertsConfigButton';
+import { ChartExportWrapper } from '@/components/ChartExportControls';
 import { findSeries, latestPoint, formatValue } from '@/lib/data';
 import { buildRiskScore } from '@/lib/stats';
 
@@ -59,6 +62,10 @@ export default function CommandCenterPage() {
   const publicDebt = findSeries('public_debt_gdp_pct');
   const reserves = findSeries('intl_reserves_usd_billion');
   const macroStability = findSeries('macro_stability_score');
+  const tradeOpenness = findSeries('trade_openness_pct');
+  const urbanPopulation = findSeries('real_estate_urban_urban_population_total');
+  const digitalPayments = findSeries('technology_digital_digital_payment_transactions_billion_thb');
+  const externalDebtShare = findSeries('external_debt_share_gdp_usd_pct');
 
   // ----------------------------------------------------------------
   // "What risks are rising?" -- a small, transparent additive score.
@@ -119,6 +126,8 @@ export default function CommandCenterPage() {
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-12 pb-16">
+      {/* Threshold drawer — client-only, open/close controlled by Zustand */}
+      <ThresholdDrawer />
       {/* ---------------------------------------------------------- */}
       {/* Hero                                                        */}
       {/* ---------------------------------------------------------- */}
@@ -167,15 +176,19 @@ export default function CommandCenterPage() {
       {/* Headline metrics                                            */}
       {/* ---------------------------------------------------------- */}
       <section className="flex flex-col gap-5">
-        <header>
-          <p className="font-label text-xs font-semibold uppercase tracking-wide text-secondary">Right now</p>
-          <h2 className="font-display mt-1 text-2xl font-semibold text-ink md:text-[2rem]">
-            What&rsquo;s happening in Thailand now
-          </h2>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-muted md:text-base">
-            A snapshot of the indicators that move first when Thailand&rsquo;s economy shifts &mdash;
-            growth, prices, jobs, trade, tourism, and the currency that ties them together.
-          </p>
+        <header className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="font-label text-xs font-semibold uppercase tracking-wide text-secondary">Right now</p>
+            <h2 className="font-display mt-1 text-2xl font-semibold text-ink md:text-[2rem]">
+              What&rsquo;s happening in Thailand now
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-muted md:text-base">
+              A snapshot of the indicators that move first when Thailand&rsquo;s economy shifts &mdash;
+              growth, prices, jobs, trade, tourism, and the currency that ties them together.
+            </p>
+          </div>
+          {/* Client component: opens the threshold settings drawer */}
+          <AlertsConfigButton />
         </header>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {HEADLINE_CODES.map(({ code, label, goodDirection }) => {
@@ -214,7 +227,9 @@ export default function CommandCenterPage() {
             subtitle="Real GDP growth and headline inflation, annual"
           >
             {gdpGrowth && inflation ? (
-              <TimeSeriesChart series={[gdpGrowth, inflation]} variant="line" />
+              <ChartExportWrapper filename="command-center-gdp-vs-inflation">
+                <TimeSeriesChart series={[gdpGrowth, inflation]} variant="line" />
+              </ChartExportWrapper>
             ) : (
               <p className="text-sm text-ink-soft">Series unavailable.</p>
             )}
@@ -242,7 +257,9 @@ export default function CommandCenterPage() {
             title="A composite read: the Macro Stability Score"
             subtitle="A z-score blend of growth, inflation, fiscal, and external indicators -- above zero reads steadier than the sample average, below zero reads more strained"
           >
-            <TimeSeriesChart series={macroStability} variant="area" yDomain={['auto', 'auto']} />
+            <ChartExportWrapper filename="command-center-macro-stability">
+              <TimeSeriesChart series={macroStability} variant="area" yDomain={['auto', 'auto']} />
+            </ChartExportWrapper>
             <p className="mt-4 text-xs leading-relaxed text-ink-soft">
               This composite is a transparent average of standardized indicators, not an official
               statistic &mdash; evidence suggests it tracks the broad mood of the economy reasonably
@@ -295,6 +312,94 @@ export default function CommandCenterPage() {
               the score reflects only the four indicators above, is recalculated from the latest year in
               this snapshot, and should be treated as a conversation-starter for &ldquo;what to watch,&rdquo;
               not a forecast of what will happen.
+            </p>
+          </GlassCard>
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-5">
+        <header>
+          <p className="font-label text-xs font-semibold uppercase tracking-wide text-secondary">New analytical lenses</p>
+          <h2 className="font-display mt-1 text-2xl font-semibold text-ink md:text-[2rem]">
+            Four ways to read Thailand beyond the headline dashboard
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-muted md:text-base">
+            The site now goes deeper on geography, external exposure, research methods, and scenario framing.
+            These aren&rsquo;t dead-end pages anymore; they&rsquo;re working analytical routes built from the same dataset underneath the core dashboard.
+          </p>
+        </header>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <GlassCard
+            title="Province Map"
+            subtitle="Structural geography without pretending we have province-level accounts"
+            footer={
+              <Link href="/province-map" className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-primary">
+                Open the geographic briefing
+              </Link>
+            }
+          >
+            <p className="font-display text-3xl font-bold text-primary">
+              {urbanPopulation ? formatValue(latestPoint(urbanPopulation)?.value ?? 0, urbanPopulation.unit) : '—'}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+              Urban population share is one of the clearest proxies for where demand, jobs, and housing pressure are concentrating.
+            </p>
+          </GlassCard>
+          <GlassCard
+            title="Trade Network"
+            subtitle="Demand dependence, buffers, and currency sensitivity in one frame"
+            footer={
+              <Link href="/trade-network" className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-primary">
+                Open the external system view
+              </Link>
+            }
+          >
+            <p className="font-display text-3xl font-bold text-secondary">
+              {tradeOpenness ? formatValue(latestPoint(tradeOpenness)?.value ?? 0, tradeOpenness.unit) : '—'}
+            </p>
+            <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+              Trade openness tells you how quickly a global demand shock is likely to show up at home.
+            </p>
+          </GlassCard>
+          <GlassCard
+            title="Research Library"
+            subtitle="Method notes, source classes, and where to go for the full explanation"
+            footer={
+              <Link href="/research-library" className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-primary">
+                Open the library
+              </Link>
+            }
+          >
+            <p className="font-display text-3xl font-bold text-[var(--accent-indigo)]">Methods first</p>
+            <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+              Every important modeled or proxy view now has an obvious explanatory home rather than living only inside chart captions.
+            </p>
+          </GlassCard>
+          <GlassCard
+            title="Digital & external cross-currents"
+            subtitle="A quick sense of how structural change and exposure can coexist"
+            footer={
+              <Link href="/forecast-lab" className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-primary">
+                Stress-test the path
+              </Link>
+            }
+          >
+            <div className="flex flex-wrap items-end gap-5">
+              <div>
+                <p className="font-display text-3xl font-bold text-success">
+                  {digitalPayments ? formatValue(latestPoint(digitalPayments)?.value ?? 0, digitalPayments.unit) : '—'}
+                </p>
+                <p className="mt-1 text-xs text-ink-soft">digital payments</p>
+              </div>
+              <div>
+                <p className="font-display text-3xl font-bold text-warning">
+                  {externalDebtShare ? formatValue(latestPoint(externalDebtShare)?.value ?? 0, externalDebtShare.unit) : '—'}
+                </p>
+                <p className="mt-1 text-xs text-ink-soft">external debt / GDP</p>
+              </div>
+            </div>
+            <p className="mt-2 text-sm leading-relaxed text-ink-muted">
+              Thailand can deepen digitally while still carrying meaningful exposure to the outside world; both stories matter at the same time.
             </p>
           </GlassCard>
         </div>

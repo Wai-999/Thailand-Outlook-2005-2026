@@ -2,6 +2,8 @@ import macroBundle from '@/public/data/macro.json';
 import microBundle from '@/public/data/micro.json';
 import sourceRegistry from '@/public/data/sources.json';
 import type { DatasetBundle, IndicatorSeries, SourceMeta } from './types';
+import { getSupabaseClient, isSupabaseConfigured } from './supabase';
+import type { DbIndicatorWithPoints } from './supabase';
 
 // Cast the static JSON imports to our schema once, at the edge.
 export const macro = macroBundle as unknown as DatasetBundle;
@@ -58,4 +60,81 @@ export function freshnessLabel(series: IndicatorSeries): string {
   if (!last) return 'No data';
   const year = last.date.slice(0, 4);
   return `Latest: ${year}`;
+}
+
+// ── Supabase async fetch (SPEC-09) ─────────────────────────────────────────────
+
+/**
+ * Converts a Supabase indicator row (with nested data_points) into the
+ * application's `IndicatorSeries` shape. No `any` casts.
+ */
+function dbRowToSeries(row: DbIndicatorWithPoints): IndicatorSeries {
+  return {
+    sector: row.sector,
+    indicatorCode: row.code,
+    indicatorName: row.name,
+    unit: row.unit,
+    frequency: row.frequency,
+    sourceName: row.source_name,
+    sourceUrl: row.source_url ?? undefined,
+    isDemo: row.is_demo,
+    points: row.data_points
+      .map((p) => ({ date: p.date, value: p.value }))
+      .sort((a, b) => a.date.localeCompare(b.date)),
+  };
+}
+
+/**
+ * Fetches all indicator series from Supabase when configured, or silently
+ * returns the bundled static data when the env vars are absent.
+ *
+ * Designed for use in Next.js Server Components:
+ * ```ts
+ * // app/macro-outlook/page.tsx (Server Component)
+ * import { fetchSeriesData } from '@/lib/data';
+ * export default async function Page() {
+ *   const series = await fetchSeriesData();
+ *   const gdpGrowth = series.find(s => s.indicatorCode === 'real_gdp_growth_pct');
+ *   return <ClientChart series={gdpGrowth} />;
+ * }
+ * ```
+ *
+ * The static fallback keeps every page functional without any database
+ * credentials — just omit / leave blank the NEXT_PUBLIC_SUPABASE_* vars.
+ */
+export async function fetchSeriesData(): Promise<IndicatorSeries[]> {
+  if (!isSupabaseConfigured()) {
+    // Static fallback — identical to allSeries()
+    return allSeries();
+  }
+
+  const client = getSupabaseClient();
+  if (!client) return allSeries();
+
+  const { data, error } = await client
+    .from('indicators')
+    .select(`
+      code,
+      name,
+      unit,
+      sector,
+      frequency,
+      source_name,
+      source_url,
+      is_demo,
+      data_points ( date, value )
+    `)
+    .order('code');
+
+  if (error) {
+    console.error('[fetchSeriesData] Supabase error — falling back to static data:', error.message);
+    return allSeries();
+  }
+
+  if (!data || data.length === 0) {
+    console.warn('[fetchSeriesData] Supabase returned no rows — falling back to static data.');
+    return allSeries();
+  }
+
+  return (data as DbIndicatorWithPoints[]).map(dbRowToSeries);
 }

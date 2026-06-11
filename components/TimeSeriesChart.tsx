@@ -117,6 +117,10 @@ export default function TimeSeriesChart({
   };
 
   return (
+    /* Mobile: horizontal scroll so dense charts stay readable on small screens.
+       A right-side fade mask signals scrollability without chrome or labels. */
+    <div className="relative overflow-x-auto md:overflow-visible">
+      <div className="min-w-[400px] md:min-w-0">
     <div style={{ width: '100%', height }} className="relative">
       {hasDemo && (
         <span className="absolute right-1 top-0 z-10 rounded-full bg-[var(--secondary)]/15 px-2 py-0.5 text-[10px] font-medium text-secondary">
@@ -188,6 +192,13 @@ export default function TimeSeriesChart({
           }
         </ResponsiveContainer>
       )}
+    </div>
+      </div>
+      {/* Scroll hint — only visible on mobile when content overflows */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 right-0 w-10 bg-gradient-to-l from-white/70 to-transparent md:hidden"
+      />
     </div>
   );
 }
