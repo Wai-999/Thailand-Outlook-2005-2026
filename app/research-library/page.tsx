@@ -1,14 +1,10 @@
-'use client';
-
 import Link from 'next/link';
 import GlassCard from '@/components/GlassCard';
-import PageHero from '@/components/PageHero';
-import PageTabs from '@/components/PageTabs';
 import ResearchNote from '@/components/ResearchNote';
-import SignalBoard from '@/components/SignalBoard';
+import DemoDataBanner from '@/components/DemoDataBanner';
 import { allSeries, sources } from '@/lib/data';
 
-// ── Static content ─────────────────────────────────────────────────────────────
+// ── Static content ─────────────────────────────────────────────────────────
 
 const METHOD_CARDS = [
   {
@@ -29,7 +25,7 @@ const METHOD_CARDS = [
   {
     id: 'proxy',
     title: 'Proxy analytics',
-    body: 'Where the dataset lacks provincial or bilateral detail, the upgraded routes use explicit proxy logic instead of faking granular data. Each proxy is described in plain language on the page that uses it.',
+    body: 'Where the dataset lacks provincial or bilateral detail, the analysis uses explicit proxy logic instead of faking granular data. Each proxy is described in plain language on the page that uses it.',
   },
 ];
 
@@ -97,6 +93,7 @@ const RELIABILITY_DESC: Record<string, string> = {
 };
 
 export default function ResearchLibraryPage() {
+  const seriesCount   = allSeries().length;
   const sourceKinds   = new Set(sources.map((s) => s.reliability));
   const accessMethods = new Set(sources.map((s) => s.accessMethod));
   const groupedSources = sources.reduce<Record<string, typeof sources>>((acc, s) => {
@@ -104,312 +101,224 @@ export default function ResearchLibraryPage() {
     return acc;
   }, {});
 
-  // ── Shared header ─────────────────────────────────────────────────────────
-  const hero = (
-    <PageHero
-      eyebrow="Methods, sources, and further reading"
-      title="A working library for how this dashboard thinks"
-      description={
-        <p>
+  return (
+    <div className="mx-auto flex max-w-6xl flex-col gap-12 pb-16">
+
+      {/* ── Page header ─────────────────────────────────────────────────── */}
+      <header className="max-w-3xl">
+        <p className="font-label text-xs font-semibold uppercase tracking-wide text-secondary">
+          Methods, sources, and further reading
+        </p>
+        <h1 className="font-display mt-1 text-3xl font-bold text-ink md:text-[2.5rem]">
+          A working index of how this dashboard thinks
+        </h1>
+        <p className="mt-3 text-sm leading-relaxed text-ink-muted md:text-base">
           The research library pulls together dataset coverage, source registry, analytical conventions,
           and the routes you should read when you want to understand not just what the dashboard says,
-          but how it reached that view.
+          but how it reached that view. The dataset currently tracks{' '}
+          <strong className="text-ink">{seriesCount} series</strong> across{' '}
+          <strong className="text-ink">{sources.length} named sources</strong> and{' '}
+          <strong className="text-ink">{sourceKinds.size} reliability classes</strong>.
         </p>
-      }
-      metrics={[
-        {
-          label: 'Tracked series',
-          value: String(allSeries().length),
-          detail: 'Across the macro and micro bundles already compiled into the app.',
-          tone: 'primary',
-        },
-        {
-          label: 'Source records',
-          value: String(sources.length),
-          detail: 'Named registries with reliability and access-method metadata.',
-          tone: 'secondary',
-        },
-        {
-          label: 'Access methods',
-          value: String(accessMethods.size),
-          detail: 'API, CSV, manual, and other ingestion paths captured in metadata.',
-          tone: 'success',
-        },
-      ]}
-    />
-  );
+      </header>
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // Tab definitions
-  // ─────────────────────────────────────────────────────────────────────────
-  const tabs = [
-    // ── Overview ────────────────────────────────────────────────────────────
-    {
-      id: 'overview',
-      label: 'Overview',
-      content: (
-        <>
-          <SignalBoard
-            title="How the evidence base is structured"
-            subtitle="This is the minimum context you want in your head before citing a chart from the site."
-            items={[
-              {
-                label: 'Indicator coverage',
-                value: `${allSeries().length} series`,
-                note: 'The site works from a finite compiled snapshot, not an open-ended live warehouse. That makes scope visible and tractable.',
-                tone: 'primary',
-              },
-              {
-                label: 'Reliability classes',
-                value: `${sourceKinds.size} classes`,
-                note: 'Each source record declares whether it is official, international, secondary, or modeled so provenance is never hidden.',
-                tone: 'secondary',
-              },
-              {
-                label: 'Primary workflow',
-                value: 'Transparent',
-                note: 'The site prefers readable arithmetic, documented composites, and disclosed assumptions over high-complexity models with low explainability.',
-                tone: 'success',
-              },
-              {
-                label: 'Snapshot character',
-                value: 'Annual',
-                note: 'Most routes use annual series. That is strong for regime reading, weaker for event timing, and the content is written accordingly.',
-                tone: 'warning',
-              },
-            ]}
-          />
+      <DemoDataBanner />
 
-          <section className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-            <GlassCard title="Method notes that matter most" subtitle="The conceptual tools reused across the dashboard">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {METHOD_CARDS.map((card) => (
-                  <div key={card.id} className="rounded-[var(--radius-md)] border border-[var(--glass-border)] bg-white/45 p-4">
-                    <p className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-ink">
-                      {card.title}
-                    </p>
-                    <p className="mt-2 text-sm leading-relaxed text-ink-muted">{card.body}</p>
-                  </div>
-                ))}
-              </div>
-            </GlassCard>
+      {/* ── Method notes ────────────────────────────────────────────────── */}
+      <section className="flex flex-col gap-5">
+        <header>
+          <p className="font-label text-xs font-semibold uppercase tracking-wide text-secondary">
+            Analytical conventions
+          </p>
+          <h2 className="font-display mt-1 text-2xl font-semibold text-ink md:text-[2rem]">
+            How the numbers are built
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-muted md:text-base">
+            Every composite score, growth rate, and proxy metric on this site uses one of a small number
+            of reusable techniques. Understanding them once makes every chart on every page easier to
+            read correctly.
+          </p>
+        </header>
 
-            <GlassCard title="Start here when you need the full story" subtitle="Best routes for methodology, provenance, and interpretation">
-              <div className="flex flex-col gap-3">
-                {START_HERE_LINKS.map((item) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className="rounded-[var(--radius-md)] border border-[var(--glass-border)] bg-white/45 p-4 transition hover:border-[var(--primary)]/30 hover:bg-white/60 hover:text-inherit"
-                  >
-                    <p className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--primary)]">
-                      {item.label}
-                    </p>
-                    <p className="mt-2 text-sm leading-relaxed text-ink-muted">{item.body}</p>
-                  </Link>
-                ))}
-              </div>
-            </GlassCard>
-          </section>
-        </>
-      ),
-    },
-
-    // ── Methodology ──────────────────────────────────────────────────────────
-    {
-      id: 'methodology',
-      label: 'Methodology',
-      content: (
-        <>
-          <header>
-            <p className="font-label text-xs font-semibold uppercase tracking-wide text-[var(--secondary)]">
-              Methodology
-            </p>
-            <h2 className="font-display mt-1 text-2xl font-semibold text-ink md:text-[2rem]">
-              How the numbers are built
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-muted">
-              Every composite score, growth rate, and proxy metric on this site uses one of a small number of
-              reusable techniques. Understanding them once makes every chart on every page easier to read correctly.
-            </p>
-          </header>
-
-          <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <GlassCard title="Method notes that matter most" subtitle="The conceptual tools reused across the dashboard">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {METHOD_CARDS.map((card) => (
-              <div key={card.id} className="rounded-[var(--radius-md)] border border-[var(--glass-border)] bg-white/45 p-5">
-                <p className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--primary)]">
+              <div key={card.id} className="rounded-[var(--radius-md)] border border-glass-border bg-white/45 p-4">
+                <p className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-primary">
                   {card.title}
                 </p>
-                <p className="mt-3 text-sm leading-relaxed text-ink-muted">{card.body}</p>
+                <p className="mt-2 text-sm leading-relaxed text-ink-muted">{card.body}</p>
               </div>
             ))}
-          </section>
+          </div>
+        </GlassCard>
 
-          <GlassCard title="Deeper technical notes" subtitle="Implementation details for the most common calculations">
-            <div className="flex flex-col gap-4">
-              {METHODOLOGY_DEEP_DIVE.map((item) => (
-                <div key={item.title} className="border-b border-[var(--glass-border)] pb-4 last:border-none last:pb-0">
-                  <p className="font-semibold text-ink">{item.title}</p>
-                  <p className="mt-2 text-sm leading-relaxed text-ink-muted">{item.body}</p>
+        <GlassCard title="Deeper technical notes" subtitle="Implementation details for the most common calculations">
+          <div className="flex flex-col gap-4">
+            {METHODOLOGY_DEEP_DIVE.map((item) => (
+              <div key={item.title} className="border-b border-glass-border pb-4 last:border-none last:pb-0">
+                <p className="font-semibold text-ink">{item.title}</p>
+                <p className="mt-2 text-sm leading-relaxed text-ink-muted">{item.body}</p>
+              </div>
+            ))}
+          </div>
+        </GlassCard>
+
+        <ResearchNote title="What belongs here next">
+          <p>
+            The next layer should be route-by-route notes: one methodology memo for each composite, one
+            limitations memo for each proxy page, and a lightweight release log whenever the compiled
+            datasets change materially. That would turn the library into a real research operations surface.
+          </p>
+        </ResearchNote>
+      </section>
+
+      {/* ── Source registry ─────────────────────────────────────────────── */}
+      <section className="flex flex-col gap-5">
+        <header>
+          <p className="font-label text-xs font-semibold uppercase tracking-wide text-secondary">
+            Source registry
+          </p>
+          <h2 className="font-display mt-1 text-2xl font-semibold text-ink md:text-[2rem]">
+            Where every number comes from
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-muted md:text-base">
+            Each source record declares its publisher, update frequency, access method, and reliability
+            class. Provenance is never hidden &mdash; if a number is estimated or compiled rather than
+            official, it is labeled as such.
+          </p>
+        </header>
+
+        {/* Reliability key */}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {Object.entries(RELIABILITY_LABEL).map(([key, label]) => (
+            <div key={key} className="rounded-[var(--radius-md)] border border-glass-border bg-white/45 p-4">
+              <p className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-secondary">
+                {label}
+              </p>
+              <p className="mt-2 text-xs leading-relaxed text-ink-soft">
+                {RELIABILITY_DESC[key]}
+              </p>
+              <p className="mt-3 font-display text-2xl font-bold text-ink">
+                {groupedSources[key]?.length ?? 0}
+              </p>
+              <p className="text-xs text-ink-soft">sources in this class</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Full registry grouped by reliability */}
+        {Object.entries(groupedSources).map(([reliability, entries]) => (
+          <GlassCard
+            key={reliability}
+            title={RELIABILITY_LABEL[reliability] ?? reliability}
+            subtitle={`${entries.length} source${entries.length !== 1 ? 's' : ''} · ${RELIABILITY_DESC[reliability] ?? ''}`}
+          >
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {entries.map((entry) => (
+                <div
+                  key={entry.sourceName}
+                  className="rounded-[var(--radius-md)] border border-glass-border bg-white/45 p-4"
+                >
+                  <p className="text-sm font-semibold text-ink">{entry.sourceName}</p>
+                  <p className="mt-1 text-xs leading-relaxed text-ink-soft">{entry.publisher}</p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <span className="rounded-full bg-glass-border px-2 py-0.5 text-[10px] font-medium text-ink-soft">
+                      {entry.updateFrequency}
+                    </span>
+                    <span className="rounded-full bg-glass-border px-2 py-0.5 text-[10px] font-medium text-ink-soft">
+                      via {entry.accessMethod}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
           </GlassCard>
+        ))}
 
-          <ResearchNote title="What belongs here next">
-            <p>
-              The next layer should be route-by-route notes: one methodology memo for each composite, one
-              limitations memo for each proxy page, and a lightweight release log whenever the compiled datasets
-              change materially. That would turn the library into a real research operations surface.
-            </p>
-          </ResearchNote>
-        </>
-      ),
-    },
+        <ResearchNote title="Access methods tracked">
+          <p>
+            The registry currently captures{' '}
+            <strong className="text-ink">{accessMethods.size} distinct access methods</strong> (API, CSV,
+            manual, and others) across all source records. This metadata is used to assess how
+            automatable each source is for the planned Supabase pipeline migration.
+          </p>
+        </ResearchNote>
+      </section>
 
-    // ── Source Registry ──────────────────────────────────────────────────────
-    {
-      id: 'sources',
-      label: 'Source Registry',
-      content: (
-        <>
-          <header>
-            <p className="font-label text-xs font-semibold uppercase tracking-wide text-[var(--secondary)]">
-              Source registry
-            </p>
-            <h2 className="font-display mt-1 text-2xl font-semibold text-ink md:text-[2rem]">
-              Where every number comes from
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-muted">
-              Each source record declares its publisher, update frequency, access method, and reliability class.
-              Provenance is never hidden — if a number is estimated or compiled rather than official, it is labeled
-              as such.
-            </p>
-          </header>
+      {/* ── Further reading ─────────────────────────────────────────────── */}
+      <section className="flex flex-col gap-5">
+        <header>
+          <p className="font-label text-xs font-semibold uppercase tracking-wide text-secondary">
+            Further reading
+          </p>
+          <h2 className="font-display mt-1 text-2xl font-semibold text-ink md:text-[2rem]">
+            Primary sources and research pathways
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-muted md:text-base">
+            These are the best external resources for each of the core thematic areas covered by the
+            dashboard. The list is short and curated &mdash; each entry points to an institution that
+            regularly publishes rigorous, publicly-available analysis on the Thai economy.
+          </p>
+        </header>
 
-          {/* Reliability key */}
-          <section className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {Object.entries(RELIABILITY_LABEL).map(([key, label]) => (
-              <div key={key} className="rounded-[var(--radius-md)] border border-[var(--glass-border)] bg-white/45 p-4">
-                <p className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--secondary)]">
-                  {label}
-                </p>
-                <p className="mt-2 text-xs leading-relaxed text-ink-soft">
-                  {RELIABILITY_DESC[key]}
-                </p>
-                <p className="mt-3 font-display text-2xl font-bold text-ink">
-                  {groupedSources[key]?.length ?? 0}
-                </p>
-                <p className="text-xs text-ink-soft">sources in this class</p>
-              </div>
-            ))}
-          </section>
-
-          {/* Full registry grouped by reliability */}
-          {Object.entries(groupedSources).map(([reliability, entries]) => (
-            <GlassCard
-              key={reliability}
-              title={RELIABILITY_LABEL[reliability] ?? reliability}
-              subtitle={`${entries.length} source${entries.length !== 1 ? 's' : ''} · ${RELIABILITY_DESC[reliability] ?? ''}`}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          {FURTHER_READING.map((item) => (
+            <a
+              key={item.title}
+              href={item.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group rounded-[var(--radius-lg)] border border-glass-border bg-white/45 p-5 transition hover:border-primary/30 hover:bg-white/60"
             >
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {entries.map((entry) => (
-                  <div
-                    key={entry.sourceName}
-                    className="rounded-[var(--radius-md)] border border-[var(--glass-border)] bg-white/45 p-4"
-                  >
-                    <p className="text-sm font-semibold text-ink">{entry.sourceName}</p>
-                    <p className="mt-1 text-xs leading-relaxed text-ink-soft">
-                      {entry.publisher}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      <span className="rounded-full bg-[var(--glass-border)] px-2 py-0.5 text-[10px] font-medium text-ink-soft">
-                        {entry.updateFrequency}
-                      </span>
-                      <span className="rounded-full bg-[var(--glass-border)] px-2 py-0.5 text-[10px] font-medium text-ink-soft">
-                        via {entry.accessMethod}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </GlassCard>
+              <p className="font-semibold text-ink group-hover:text-primary">{item.title}</p>
+              <p className="mt-2 text-sm leading-relaxed text-ink-muted">{item.body}</p>
+              <p className="mt-3 font-label text-[11px] text-ink-soft">{item.url}</p>
+            </a>
           ))}
-        </>
-      ),
-    },
+        </div>
 
-    // ── Further Reading ──────────────────────────────────────────────────────
-    {
-      id: 'reading',
-      label: 'Further Reading',
-      content: (
-        <>
-          <header>
-            <p className="font-label text-xs font-semibold uppercase tracking-wide text-[var(--primary)]">
-              Further reading
-            </p>
-            <h2 className="font-display mt-1 text-2xl font-semibold text-ink md:text-[2rem]">
-              Primary sources and research pathways
-            </h2>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-muted">
-              These are the best external resources for each of the core thematic areas covered by the dashboard.
-              The list is short and curated — each entry points to an institution that regularly publishes rigorous,
-              publicly-available analysis on the Thai economy.
-            </p>
-          </header>
+        <ResearchNote title="How to cite data from this dashboard">
+          <p>
+            The compiled dataset in this project is derived from the named sources above. When citing
+            specific numbers, cite the original source (e.g. &ldquo;World Bank WDI, 2024&rdquo;) rather
+            than this dashboard, and note that some series have been rebased, derived, or interpolated
+            as documented in the method notes above.
+          </p>
+        </ResearchNote>
+      </section>
 
-          <section className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            {FURTHER_READING.map((item) => (
-              <a
-                key={item.title}
-                href={item.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group rounded-[var(--radius-lg)] border border-[var(--glass-border)] bg-white/45 p-5 transition hover:border-[var(--primary)]/30 hover:bg-white/60"
-              >
-                <p className="font-semibold text-ink group-hover:text-[var(--primary)]">{item.title}</p>
-                <p className="mt-2 text-sm leading-relaxed text-ink-muted">{item.body}</p>
-                <p className="mt-3 font-label text-[11px] text-ink-soft">
-                  {item.url}
-                </p>
-              </a>
-            ))}
-          </section>
+      {/* ── Internal navigation ─────────────────────────────────────────── */}
+      <section className="flex flex-col gap-5">
+        <header>
+          <p className="font-label text-xs font-semibold uppercase tracking-wide text-secondary">
+            Start here
+          </p>
+          <h2 className="font-display mt-1 text-2xl font-semibold text-ink md:text-[2rem]">
+            Best routes for methodology and provenance
+          </h2>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-muted md:text-base">
+            These internal pages carry the most detailed documentation for how the dashboard works and
+            where its numbers come from.
+          </p>
+        </header>
 
-          <GlassCard title="Internal reading paths" subtitle="Best routes inside the dashboard for methodology, provenance, and interpretation">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {START_HERE_LINKS.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="rounded-[var(--radius-md)] border border-[var(--glass-border)] bg-white/45 p-4 transition hover:border-[var(--primary)]/30 hover:bg-white/60 hover:text-inherit"
-                >
-                  <p className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--primary)]">
-                    {item.label}
-                  </p>
-                  <p className="mt-2 text-sm leading-relaxed text-ink-muted">{item.body}</p>
-                </Link>
-              ))}
-            </div>
-          </GlassCard>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {START_HERE_LINKS.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="rounded-[var(--radius-md)] border border-glass-border bg-white/45 p-4 transition hover:border-primary/30 hover:bg-white/60 hover:text-inherit"
+            >
+              <p className="font-label text-[11px] font-semibold uppercase tracking-[0.12em] text-primary">
+                {item.label}
+              </p>
+              <p className="mt-2 text-sm leading-relaxed text-ink-muted">{item.body}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
 
-          <ResearchNote title="How to cite data from this dashboard">
-            <p>
-              The compiled dataset in this project is derived from the named sources above. When citing specific
-              numbers, cite the original source (e.g. "World Bank WDI, 2024") rather than this dashboard, and
-              note that some series have been rebased, derived, or interpolated as documented in the methodology tab.
-            </p>
-          </ResearchNote>
-        </>
-      ),
-    },
-  ];
-
-  return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-10 pb-16">
-      {hero}
-      <PageTabs tabs={tabs} defaultTab="overview" />
     </div>
   );
 }

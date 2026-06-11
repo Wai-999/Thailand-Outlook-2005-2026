@@ -56,18 +56,18 @@ export const NAV_ITEMS: NavItem[] = [
     description: 'How individual industries are really performing, sector by sector.',
   },
   {
-    label: 'Province Map',
+    label: 'Regional & Urban Lens',
     href: '/province-map',
     icon: Map,
     implemented: true,
-    description: 'A geographic lens on concentration, urbanization, and regional divergence.',
+    description: 'Urbanization, digital inclusion, and the structural signals behind regional divergence.',
   },
   {
-    label: 'Trade Network',
+    label: 'External Sector',
     href: '/trade-network',
     icon: Network,
     implemented: true,
-    description: 'External demand, buffers, and the channels that carry global shocks inward.',
+    description: 'Trade flows, external buffers, and the channels that carry global shocks inward.',
   },
   {
     label: 'Tourism Monitor',
