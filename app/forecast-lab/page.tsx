@@ -1,39 +1,56 @@
 import GlassCard from '@/components/GlassCard';
-import TimeSeriesChart from '@/components/TimeSeriesChart';
 import ResearchNote from '@/components/ResearchNote';
 import DemoDataBanner from '@/components/DemoDataBanner';
 import SourceBadge from '@/components/SourceBadge';
+import ForecastFanChart from './ForecastFanChart';
+import type { SerializableProjection } from './ForecastFanChart';
 import { findSeries, latestPoint, formatValue } from '@/lib/data';
 import { linearTrendForecast } from '@/lib/stats';
-import type { IndicatorSeries } from '@/lib/types';
 
 const HORIZON = 3;
 const LOOKBACK = 10;
 
+/**
+ * Strip the non-serialisable predict() closure from an OLS result so the
+ * projection can safely cross the server → client component boundary as a prop.
+ */
+function serializeProjection(
+  raw: ReturnType<typeof linearTrendForecast> | null,
+): SerializableProjection | null {
+  if (!raw || !raw.forecast.length) return null;
+  return {
+    forecast: raw.forecast.map((f) => ({ date: f.date, value: f.value })),
+    model: raw.model
+      ? {
+          slope: raw.model.slope,
+          intercept: raw.model.intercept,
+          rSquared: raw.model.rSquared,
+          n: raw.model.n,
+        }
+      : null,
+  };
+}
+
 export default function ForecastLabPage() {
   const gdp = findSeries('real_gdp_growth_pct');
+  const inflation = findSeries('cpi_inflation_pct');
   const tourismShare = findSeries('tourism_receipts_share_gdp_usd_pct');
   const exportsShare = findSeries('exports_gdp_pct');
   const publicDebt = findSeries('public_debt_gdp_pct');
   const householdDebt = findSeries('household_debt_gdp_pct');
 
-  const projection = gdp ? linearTrendForecast(gdp.points, HORIZON, LOOKBACK) : null;
-  const baselineYear1 = projection?.forecast[0] ?? null;
+  // Raw projections (contain OLSResult with predict() — not serialisable as props)
+  const gdpProjectionRaw = gdp ? linearTrendForecast(gdp.points, HORIZON, LOOKBACK) : null;
+  const infProjectionRaw = inflation
+    ? linearTrendForecast(inflation.points, HORIZON, LOOKBACK)
+    : null;
 
-  let chartSeries: IndicatorSeries[] = [];
-  if (gdp && projection && projection.forecast.length) {
-    const lastActual = gdp.points[gdp.points.length - 1];
-    chartSeries = [
-      { ...gdp, indicatorName: 'GDP growth (actual)' },
-      {
-        ...gdp,
-        indicatorCode: `${gdp.indicatorCode}__forecast`,
-        indicatorName: 'GDP growth (baseline forecast)',
-        isDemo: true,
-        points: [lastActual, ...projection.forecast.map((f) => ({ date: f.date, value: f.value }))],
-      },
-    ];
-  }
+  // Serialisable versions passed to the client component
+  const gdpProjection = serializeProjection(gdpProjectionRaw);
+  const infProjection = serializeProjection(infProjectionRaw);
+
+  // Used in the "show the work" note and scenario arithmetic
+  const baselineYear1 = gdpProjectionRaw?.forecast[0] ?? null;
 
   // ---- Scenario arithmetic: simple, named, fully shown -----------------
   // Each scenario states (1) an assumed shock, (2) a measured exposure
@@ -162,42 +179,56 @@ export default function ForecastLabPage() {
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-muted md:text-base">
             The most defensible starting forecast is often the least dramatic one: fit a line
-            through the recent past and extend it forward. It won&rsquo;t catch turning points, but
-            it gives you an honest, transparent reference line to measure scenarios against.
+            through the recent past and extend it forward. The shaded fan shows how far off that
+            baseline a pessimistic or optimistic scenario might land &mdash; drag the sliders to
+            adjust the offsets.
           </p>
         </header>
-        <GlassCard
-          title="Real GDP growth -- recent history and a 3-year baseline projection"
-          subtitle="Trend line fit to the trailing 10 years, extended forward; the dashed-feeling second line is the projection, not a measurement"
-        >
-          {chartSeries.length === 2 ? (
-            <TimeSeriesChart series={chartSeries} variant="line" />
-          ) : (
-            <p className="text-sm text-ink-soft">Series unavailable.</p>
-          )}
-          <div className="mt-4 flex flex-wrap gap-2">
-            {gdp && <SourceBadge sourceName={gdp.sourceName} sourceUrl={gdp.sourceUrl} reliability="secondary" compact />}
-          </div>
-        </GlassCard>
-        {projection?.model && baselineYear1 && (
+
+        {/* GDP fan chart */}
+        {gdp && gdpProjection ? (
+          <ForecastFanChart
+            series={gdp}
+            projection={gdpProjection}
+            title="Real GDP growth &mdash; recent history and a 3-year scenario fan"
+            subtitle="Trend line fit to the trailing 10 years; shaded bands show pessimistic and optimistic offsets · adjust via sliders below"
+          />
+        ) : (
+          <p className="text-sm text-ink-soft">GDP series unavailable.</p>
+        )}
+
+        {gdpProjectionRaw?.model && baselineYear1 && (
           <ResearchNote title="Show the work">
             <p>
               The line is fit on the trailing {LOOKBACK} years of annual data:{' '}
               <span className="font-mono text-[13px] text-ink">
-                growth &asymp; {projection.model.intercept.toFixed(2)} {projection.model.slope >= 0 ? '+' : '−'}{' '}
-                {Math.abs(projection.model.slope).toFixed(3)} &times; (year index)
+                growth &asymp; {gdpProjectionRaw.model.intercept.toFixed(2)}{' '}
+                {gdpProjectionRaw.model.slope >= 0 ? '+' : '−'}{' '}
+                {Math.abs(gdpProjectionRaw.model.slope).toFixed(3)} &times; (year index)
               </span>{' '}
-              with R&sup2; of {projection.model.rSquared.toFixed(2)}. Carried forward, that line puts{' '}
-              <strong className="text-ink">{baselineYear1.date.slice(0, 4)}</strong> growth at roughly{' '}
-              <strong className="text-ink">{formatValue(baselineYear1.value, '%')}</strong>, drifting from there as the
-              trend continues.
+              with R&sup2; of {gdpProjectionRaw.model.rSquared.toFixed(2)}. Carried forward, that
+              line puts{' '}
+              <strong className="text-ink">{baselineYear1.date.slice(0, 4)}</strong> growth at
+              roughly{' '}
+              <strong className="text-ink">{formatValue(baselineYear1.value, '%')}</strong>,
+              drifting from there as the trend continues.
             </p>
             <p>
-              <strong className="text-ink">Worth remembering:</strong> a straight line cannot see a recession coming,
-              cannot see a boom coming, and says nothing about policy choices yet to be made. It is a baseline to argue
-              with, not a prediction to bank on.
+              <strong className="text-ink">Worth remembering:</strong> a straight line cannot see a
+              recession coming, cannot see a boom coming, and says nothing about policy choices yet
+              to be made. It is a baseline to argue with, not a prediction to bank on.
             </p>
           </ResearchNote>
+        )}
+
+        {/* Inflation fan chart */}
+        {inflation && infProjection && (
+          <ForecastFanChart
+            series={inflation}
+            projection={infProjection}
+            title="CPI inflation &mdash; recent history and a 3-year scenario fan"
+            subtitle="Same trailing-trend method applied to headline inflation; sliders adjust the scenario offsets independently of the GDP chart above"
+          />
         )}
       </section>
 
@@ -288,7 +319,7 @@ export default function ForecastLabPage() {
               <p className="font-label text-xs font-semibold uppercase tracking-wide text-danger">What it isn&rsquo;t</p>
               <ul className="flex flex-col gap-1.5 text-sm leading-relaxed text-ink-muted">
                 <li>• A calibrated macroeconomic model -- there is no ARIMA, VAR, or structural model running underneath it (the spec deliberately holds those for later, once this baseline has proven itself).</li>
-                <li>• Trained on enough history to be statistically confident -- {projection?.model ? `${projection.model.n} annual observations` : 'roughly two decades of annual data'} is a thin foundation for any forecasting method.</li>
+                <li>• Trained on enough history to be statistically confident -- {gdpProjectionRaw?.model ? `${gdpProjectionRaw.model.n} annual observations` : 'roughly two decades of annual data'} is a thin foundation for any forecasting method.</li>
                 <li>• Aware of policy responses, compounding shocks, or anything that hasn&rsquo;t happened yet.</li>
               </ul>
             </div>
